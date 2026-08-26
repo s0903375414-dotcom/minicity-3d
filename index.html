@@ -72,15 +72,20 @@
   <div class="rciCol"><div class="rciBarWrap"><div class="rciBar" id="bar-zind" style="background:#e0c25a"></div></div>工</div>
 </div>
 
-<div id="right" class="panel">
-  稅率 <b id="taxval">9</b>%<br>
-  <input type="range" id="tax" min="0" max="20" value="9">
-  <button id="btn-save">💾 存檔（每 30 秒自動存檔）</button>
-  <button id="btn-load">📂 讀取存檔</button>
-  <button id="btn-cloud">☁️ 雲端存檔（Google）</button>
-  <button id="btn-cloud-load">⬇️ 從雲端載入</button>
-  <button id="btn-cloud-setup">🔑 設定 Google 連結</button>
-  <button id="btn-new">♻️ 重新開始</button>
+<div id="right" class="panel" style="top:10px;right:10px;padding:0;width:200px;overflow:hidden;">
+  <div id="right-toggle" style="padding:8px 12px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+    <span>⚙️ 設定</span><span id="right-arrow">▼</span>
+  </div>
+  <div id="right-body" style="padding:0 12px 10px;font-size:13px;line-height:1.6;display:none;">
+    稅率 <b id="taxval">9</b>%<br>
+    <input type="range" id="tax" min="0" max="20" value="9">
+    <button id="btn-save">💾 存檔</button>
+    <button id="btn-load">📂 讀取</button>
+    <button id="btn-cloud">☁️ 雲端存檔</button>
+    <button id="btn-cloud-load">⬇️ 雲端載入</button>
+    <button id="btn-cloud-setup">🔑 Google 設定</button>
+    <button id="btn-new">♻️ 重新開始</button>
+  </div>
 </div>
 
 <div id="catbar" class="panel"></div>
@@ -2322,6 +2327,15 @@ function startGame(){
   mainmenu.style.opacity='0';
   setTimeout(()=>mainmenu.remove(),650);
 }
+// 設定面板收合
+$('right-toggle').onclick=()=>{
+  const body=$('right-body'), arrow=$('right-arrow');
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  arrow.textContent=open?'▲':'▼';
+};
+// 預設展開一次讓玩家知道有東西
+setTimeout(()=>{if($('right-body').style.display==='none'){$('right-body').style.display='block';$('right-arrow').textContent='▲';}},8000);
 $('mm-continue').onclick=()=>{
   const has=!!localStorage.getItem(SAVE_KEY);
   if(has)load(); else toast('找不到存檔，開始新城市','bad');
