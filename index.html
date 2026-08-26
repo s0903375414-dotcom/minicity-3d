@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>MiniCity 3D — 城市建造模擬</title>
+<style>
+  :root{ --panel:rgba(14,18,28,.88); --line:rgba(255,255,255,.14); --gold:#ffd75e; --accent:#3d8bfd; }
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Segoe UI","Microsoft JhengHei",system-ui,sans-serif;background:#000;}
+  canvas{display:block;}
+  .panel{position:absolute;z-index:10;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;color:#fff;backdrop-filter:blur(8px);}
+  /* ===== 頂部狀態列 ===== */
+  #topbar{top:10px;left:50%;transform:translateX(-50%);display:flex;gap:0;padding:0;overflow:hidden;border-radius:12px;}
+  #topbar .stat{padding:8px 14px;font-size:13px;border-right:1px solid var(--line);white-space:nowrap;}
+  #topbar .stat:last-child{border-right:none;}
+  #topbar b{color:var(--gold);font-size:14px;}
+  #topbar .warn{color:#ff7b6b;font-weight:bold;}
+  #topbar .lbl{opacity:.65;font-size:11px;display:block;}
+  /* ===== RCI ===== */
+  #rci{top:10px;left:10px;padding:9px 12px;display:flex;gap:10px;align-items:flex-end;}
+  .rciCol{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#cde;}
+  .rciBarWrap{width:15px;height:40px;border:1px solid var(--line);border-radius:4px;display:flex;align-items:flex-end;overflow:hidden;background:rgba(0,0,0,.4);}
+  .rciBar{width:100%;transition:height .5s;}
+  /* ===== 右側設定 ===== */
+  #right{top:10px;right:10px;padding:10px 12px;font-size:13px;width:180px;line-height:1.6;}
+  #right input[type=range]{width:100%;}
+  #right button{width:100%;margin-top:5px;padding:5px;border-radius:7px;border:1px solid var(--line);
+    background:#2a3346;color:#fff;cursor:pointer;font-size:12px;}
+  #right button:hover{background:#3a4a66;}
+  /* ===== TheoTown 風格：分類建造列 ===== */
+  #catbar{bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:7px;z-index:12;}
+  .cat{width:56px;height:52px;border-radius:10px;border:1px solid var(--line);background:#232c3e;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;gap:2px;}
+  .cat:hover{background:#31405c;}
+  .cat.active{background:var(--accent);border-color:#9cc3ff;box-shadow:0 0 10px #3d8bfd66;}
+  .cat .ico{font-size:20px;line-height:1;}
+  .cat .nm{font-size:10px;opacity:.85;}
+  #buildpanel{bottom:74px;left:50%;transform:translateX(-50%);display:none;padding:10px;max-width:92vw;z-index:11;}
+  #buildpanel.open{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .bcard{width:96px;background:#1d2534;border:1px solid var(--line);border-radius:10px;padding:7px 6px;
+    text-align:center;cursor:pointer;user-select:none;transition:transform .1s;}
+  .bcard:hover{background:#2a3850;transform:translateY(-2px);}
+  .bcard.sel{border-color:var(--gold);box-shadow:0 0 8px #ffd75e55;}
+  .bcard .ico{font-size:24px;}
+  .bcard .nm{font-size:11px;margin:2px 0;}
+  .bcard .cost{font-size:11px;color:var(--gold);}
+  .bcard .up{font-size:9px;opacity:.6;}
+  .bcard .desc{font-size:9px;opacity:.55;line-height:1.3;margin-top:2px;}
+  #help{bottom:12px;right:10px;font-size:11.5px;color:#cde;padding:9px 12px;line-height:1.7;max-width:225px;}
+  #toasts{position:absolute;right:12px;top:190px;z-index:20;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+  .toast{background:rgba(30,20,10,.9);color:#ffdca0;border:1px solid #a86;border-radius:8px;
+    padding:6px 12px;font-size:12.5px;animation:tin .25s ease;max-width:260px;}
+  .toast.bad{background:rgba(60,10,10,.9);color:#ffb0a0;border-color:#a55;}
+  .toast.good{background:rgba(10,40,20,.9);color:#a8ffc8;border-color:#5a7;}
+  @keyframes tin{from{opacity:0;transform:translateX(30px);}to{opacity:1;}}
+</style>
+</head>
+<body>
+
+<div id="topbar" class="panel">
+  <div class="stat"><span class="lbl">資金</span>💰 <b id="money">30000</b></div>
+  <div class="stat"><span class="lbl">人口</span>👥 <b id="pop">0</b></div>
+  <div class="stat"><span class="lbl">就業</span>💼 <b id="jobs">0</b></div>
+  <div class="stat"><span class="lbl">幸福</span>😊 <b id="happy">55</b>%</div>
+  <div class="stat"><span class="lbl">日期</span>📅 <b id="date">2026年1月</b></div>
+  <div class="stat"><span class="lbl">收支/月</span><b id="net" style="color:#8ef2a0">+0</b><span id="short" class="warn"></span></div>
+</div>
+
+<div id="rci" class="panel">
+  <div class="rciCol"><div class="rciBarWrap"><div class="rciBar" id="bar-zres" style="background:#5ecb5e"></div></div>住</div>
+  <div class="rciCol"><div class="rciBarWrap"><div class="rciBar" id="bar-zcom" style="background:#5eaadb"></div></div>商</div>
+  <div class="rciCol"><div class="rciBarWrap"><div class="rciBar" id="bar-zind" style="background:#e0c25a"></div></div>工</div>
+</div>
+
+<div id="right" class="panel">
+  稅率 <b id="taxval">9</b>%<br>
+  <input type="range" id="tax" min="0" max="20" value="9">
+  <button id="btn-save">💾 存檔（每 30 秒自動存檔）</button>
+  <button id="btn-load">📂 讀取存檔</button>
+  <button id="btn-cloud">☁️ 雲端存檔（Google）</button>
+  <button id="btn-cloud-load">⬇️ 從雲端載入</button>
+  <button id="btn-cloud-setup">🔑 設定 Google 連結</button>
+  <button id="btn-new">♻️ 重新開始</button>
+</div>
+
+<div id="catbar" class="panel"></div>
+<div id="buildpanel" class="panel"></div>
+
+<div id="help" class="panel">
+🖱 左鍵點擊／拖曳＝建造（道路、分區可連畫）<br>
+🖱 右鍵拖曳＝旋轉 · 中鍵或 WASD＝平移 · 滾輪＝縮放<br>
+按 <b>R</b>＝拆除模式 · <b>Esc</b>＝收起選單<br><br>
+① 鋪路 ② 蓋電廠水塔（沿路供應）③ 劃分區 ④ 建築自己長出來<br>
+⚠ 工業會失火，消防局覆蓋才安全 · 公園/廣場/體育場提升幸福
+</div>
+<div id="toasts"></div>
+
+<!-- ===== 主選單 ===== -->
+<div id="mainmenu" style="position:absolute;inset:0;z-index:100;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:18px;
+  background:linear-gradient(180deg,#0d1526 0%,#16233d 55%,#1d3a2a 100%);">
+  <div style="font-size:52px;font-weight:bold;color:#fff;text-shadow:0 4px 18px rgba(61,139,253,.5);letter-spacing:4px;">
+    🏙 MiniCity <span style="color:var(--gold)">3D</span></div>
+  <div style="color:#9fb4d8;font-size:14px;margin-top:-10px;">城市建造模擬 — 建設你的夢想城市</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;width:240px;">
+    <button id="mm-continue" style="padding:12px;border-radius:12px;border:1px solid #4a6a9a;
+      background:linear-gradient(135deg,#2d5aa8,#3d8bfd);color:#fff;font-size:16px;cursor:pointer;">
+      ▶ 繼續遊戲</button>
+    <button id="mm-new" style="padding:12px;border-radius:12px;border:1px solid #4a6a9a;
+      background:#232c3e;color:#fff;font-size:16px;cursor:pointer;">
+      🆕 新的城市</button>
+    <button id="mm-help" style="padding:12px;border-radius:12px;border:1px solid #3a4a66;
+      background:#1a2230;color:#9fb4d8;font-size:13px;cursor:pointer;">
+      ❓ 遊戲說明</button>
+  </div>
+  <div id="mm-helpbox" style="display:none;color:#cde;font-size:12.5px;line-height:1.8;max-width:340px;
+    background:rgba(0,0,0,.35);padding:12px 16px;border-radius:10px;border:1px solid var(--line);">
+    <b style="color:var(--gold)">目標：</b>發展人口、維持幸福度與財政平衡。<br>
+    <b style="color:var(--gold)">流程：</b>鋪路 → 蓋電廠水塔（貼路）→ 劃分區 → 建築自動生長升級。<br>
+    <b style="color:var(--gold)">RCI 條：</b>左上三色柱告訴你市民需要哪種區。<br>
+    <b style="color:var(--gold)">幸福度：</b>公園/廣場/體育場加分，工業污染扣分，稅率影響心情。<br>
+    <b style="color:var(--gold)">災害：</b>工業區會失火，消防局覆蓋範圍才安全。<br>
+    <b style="color:var(--gold)">操作：</b>左鍵建造/拖曳 · 右鍵旋轉 · 中鍵/WASD 平移 · 滾輪縮放
+  </div>
+  <div style="position:absolute;bottom:16px;color:#5a6a85;font-size:11px;">v3.0 — Three.js 城市模擬</div>
+</div>
+
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+<script>
+'use strict';
+/* ================= 常數與狀態 ================= */
+const N=40;
+const rr=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const SERVICES=['park','fountain','plaza','power','wind','solar','water','police','firest','hospital','school','stadium'];
+const ZONES=['zres','zcom','zind'];
+const POWER_CAP={power:100,wind:40,solar:30};
+const ZONE_COL={zres:0x4fc94f,zcom:0x4f9fe0,zind:0xe0c04f};
+const RES_POP=[0,8,16,28,44,64], JOB_COM=[0,6,12,20,32,48], JOB_IND=[0,8,16,26,40,58];
+const DAY_LEN=240;
+
+/* ===== 建造分類（TheoTown 風格）===== */
+const CATS=[
+ {id:'transport',ico:'🛣',nm:'道路',items:['road']},
+ {id:'zones',ico:'🏘',nm:'分區',items:['zres','zcom','zind']},
+ {id:'green',ico:'🌳',nm:'綠地',items:['park','fountain','plaza']},
+ {id:'utility',ico:'⚡',nm:'水電',items:['power','wind','solar','water']},
+ {id:'service',ico:'🏛',nm:'公共',items:['police','firest','hospital','school','stadium']},
+ {id:'bulldoze',ico:'🚧',nm:'拆除',items:['bulldoze']},
+];
+const T={
+  bulldoze:{n:'拆除',ico:'🚧',c:5,d:'移除建築或道路'},
+  road:    {n:'道路',ico:'🛣',c:15,d:'城市血管，沿路供應水電'},
+  zres:    {n:'住宅區',ico:'🏠',c:25,d:'市民居住，需要水電'},
+  zcom:    {n:'商業區',ico:'🏢',c:30,d:'商店與辦公，提供就業'},
+  zind:    {n:'工業區',ico:'🏭',c:30,d:'工廠，工作多但污染'},
+  park:    {n:'公園',ico:'🌳',c:90,u:2,d:'幸福 +，淨化污染'},
+  fountain:{n:'噴泉廣場',ico:'⛲',c:150,u:3,d:'幸福 +，美化市容'},
+  plaza:   {n:'市民廣場',ico:'🏛',c:260,u:5,d:'幸福 ++，集會空間'},
+  power:   {n:'火力電廠',ico:'⚡',c:1200,u:80,d:'供電 100，沿路輸送'},
+  wind:    {n:'風力發電',ico:'🌀',c:2000,u:50,d:'供電 40，零污染'},
+  solar:   {n:'太陽能電場',ico:'🔆',c:2500,u:30,d:'供電 30，零污染'},
+  water:   {n:'水塔',ico:'💧',c:600,u:30,d:'供水 70，沿路輸送'},
+  police:  {n:'警察局',ico:'🚓',c:900,u:60,d:'治安覆蓋，幸福 +'},
+  firest:  {n:'消防局',ico:'🚒',c:900,u:60,d:'覆蓋內火災自動撲滅'},
+  hospital:{n:'醫院',ico:'🏥',c:1500,u:120,d:'健康覆蓋，幸福 +'},
+  school:  {n:'學校',ico:'🏫',c:1100,u:90,d:'教育覆蓋，幸福 +'},
+  stadium: {n:'體育場',ico:'🏟',c:5000,u:250,d:'大範圍幸福 ++'},
+};
+
+let money=30000, taxRate=9, tick=0, pop=0, jobs=0, happy=55;
+let lastNet=0, lastUpkeep=0, lastIncome=0;
+let demand={zres:.45,zcom:.15,zind:.15};
+const SHORT={p:false,w:false};
+const grid=[];
+for(let y=0;y<N;y++){grid.push(new Array(N).fill(null));}
+
+/* ================= 場景 ================= */
+const scene=new THREE.Scene();
+const SKY_DAY=new THREE.Color(0x87ceeb), SKY_NIGHT=new THREE.Color(0x0a1128), SKY_SET=new THREE.Color(0xf2984f);
+scene.background=SKY_DAY.clone();
+scene.fog=new THREE.Fog(scene.background.getHex(),55,140);
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,400);
+const ctrl={target:new THREE.Vector3(N/2,0,N/2),sph:new THREE.Spherical(46,Math.PI/3.4,Math.PI/4)};
+function camUpdate(){
+  camera.position.setFromSpherical(ctrl.sph).add(ctrl.target);
+  camera.lookAt(ctrl.target);
+}
+camUpdate();
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xbfd9ff,0x3a5233,.5));
+const amb=new THREE.AmbientLight(0xffffff,.35); scene.add(amb);
+const sun=new THREE.DirectionalLight(0xfff2dd,1.1);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-32,right:32,top:32,bottom:-32,near:5,far:220});
+scene.add(sun); scene.add(sun.target);
+
+/* ================= 地面 ================= */
+function canvasTex(fn){
+  const c=document.createElement('canvas'); c.width=c.height=128;
+  fn(c.getContext('2d'));
+  const t=new THREE.CanvasTexture(c); return t;
+}
+const grassTex=canvasTex(g=>{
+  g.fillStyle='#5a9a4e'; g.fillRect(0,0,128,128);
+  for(let i=0;i<1400;i++){
+    g.fillStyle=['#4f8f45','#65a758','#58984c','#6db061','#4a8742'][i%5];
+    g.fillRect(Math.random()*128,Math.random()*128,1.5,1.5);
+  }
+  for(let i=0;i<36;i++){
+    g.fillStyle=Math.random()<.5?'#e8e07a':'#d88aa8';
+    g.fillRect(Math.random()*128,Math.random()*128,1.2,1.2);
+  }
+});
+grassTex.wrapS=grassTex.wrapT=THREE.RepeatWrapping;
+grassTex.repeat.set(N*2,N*2);
+const ground=new THREE.Mesh(new THREE.BoxGeometry(N,0.5,N),
+  new THREE.MeshLambertMaterial({map:grassTex}));
+ground.position.set(N/2,-.25,N/2); ground.receiveShadow=true; scene.add(ground);
+const gl=new THREE.GridHelper(N,N,0x2e5c26,0x63a455);
+gl.position.set(N/2,.005,N/2); gl.material.opacity=.08; gl.material.transparent=true; scene.add(gl);
+const ocean=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshLambertMaterial({color:0x27618f}));
+ocean.rotation.x=-Math.PI/2; ocean.position.y=-.42; scene.add(ocean);
+
+/* ================= 建築工廠（共用工具）================= */
+const GLOW=[];
+const shadowed=m=>{m.castShadow=true;m.receiveShadow=true;return m;};
+const LM=c=>new THREE.MeshLambertMaterial({color:c});
+
+/* ===== 樓層式立面貼圖 ===== */
+function facadeTex(wall,floors,litNight){
+  return canvasTex(g=>{
+    g.fillStyle=wall; g.fillRect(0,0,128,128);
+    const rows=Math.max(1,floors), rh=128/rows;
+    for(let r=0;r<rows;r++){
+      g.fillStyle='rgba(0,0,0,.25)'; g.fillRect(0,r*rh,128,3);
+      for(let c=0;c<4;c++){
+        if(litNight) g.fillStyle=Math.random()<.68?'#ffdf8a':'#1c150c';
+        else g.fillStyle=['#bcd8e8','#9fc4da','#d8ecf5','#8ab2cc'][Math.floor(Math.random()*4)];
+        g.fillRect(8+c*30, r*rh+rh*.24, 22, rh*.5);
+        g.fillStyle='rgba(255,255,255,.18)';
+        g.fillRect(8+c*30, r*rh+rh*.24, 22, rh*.12);
+      }
+    }
+  });
+}
+const FACADE={};
+function facadeMats(kind,level){
+  const key=kind+'_'+level;
+  if(FACADE[key])return FACADE[key];
+  const floors=level+1;
+  const PAL={zres:['#d99a76','#cf8a66','#e2a884','#b98a92'],
+             zcom:['#7fb2d9','#6aa3cf','#93bede','#88a6c9'],
+             zind:['#b3b3ba','#a2a2ab']};
+  const sides=PAL[kind].map(w=>{
+    const m=new THREE.MeshLambertMaterial({
+      map:facadeTex(w,floors,false),
+      emissiveMap:facadeTex('#000',floors,true),
+      emissive:new THREE.Color(0xffffff),emissiveIntensity:0});
+    GLOW.push(m); return m;
+  });
+  FACADE[key]={sides,plain:LM(0xa8a8a8)};
+  return FACADE[key];
+}
+function boxWithSides(w,h,d,fm){
+  return shadowed(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    [fm.sides[0],fm.sides[1],fm.plain,fm.plain,fm.sides[2],fm.sides[3]]));
+}
+
+/* ===== 分區建築：多種變體 ===== */
+function buildBuildingMesh(kind,level,x,y){
+  const g=new THREE.Group();
+  const variant=Math.abs((x*7+y*13)%3); // 依座標穩定選變體
+  if(kind==='zres'){
+    if(level<=2){
+      if(variant===0){ // 透天厝：斜屋頂+煙囪+庭院
+        const h=.34+level*.14;
+        const body=boxWithSides(.7,h,.62,facadeMats('zres',level));
+        body.position.y=h/2+.04; g.add(body);
+        const roof=shadowed(new THREE.Mesh(new THREE.ConeGeometry(.56,.28,4),LM(pick([0x8c4a3a,0x6e4034,0x7a5044]))));
+        roof.rotation.y=Math.PI/4; roof.position.y=h+.18; g.add(roof);
+        const chm=new THREE.Mesh(new THREE.BoxGeometry(.08,.16,.08),LM(0x9a5a4a));
+        chm.position.set(-.2,h+.2,-.15); g.add(chm);
+        const yard=new THREE.Mesh(new THREE.BoxGeometry(.92,.035,.84),LM(0x6fae5c));
+        yard.position.y=.018; yard.receiveShadow=true; g.add(yard);
+      }else if(variant===1){ // 雙併洋房：兩戶並排
+        const h=.3+level*.12;
+        for(const dx of [-.19,.19]){
+          const fm=facadeMats('zres',level);
+          const body=boxWithSides(.34,h,.6,fm);
+          body.position.set(dx,h/2+.04,0); g.add(body);
+          const roof=shadowed(new THREE.Mesh(new THREE.ConeGeometry(.28,.2,4),LM(0x6e4034)));
+          roof.rotation.y=Math.PI/4; roof.position.set(dx,h+.14,0); g.add(roof);
+        }
+        const yard=new THREE.Mesh(new THREE.BoxGeometry(.92,.035,.84),LM(0x67a457));
+        yard.position.y=.018; yard.receiveShadow=true; g.add(yard);
+      }else{ // 現代平頂透天
+        const h=.38+level*.16;
+        const body=boxWithSides(.66,h,.66,facadeMats('zres',level));
+        body.position.y=h/2+.04; g.add(body);
+        const roof=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.7,.05,.7),LM(0xd8d3c8)));
+        roof.position.y=h+.06; g.add(roof);
+        const gar=new THREE.Mesh(new THREE.BoxGeometry(.3,.18,.3),LM(0xbfb8a8));
+        gar.position.set(.24,.13,.34); g.add(gar);
+      }
+    }else{
+      if(variant===2){ // 板式大樓（長方形）
+        const h=.55+level*.3;
+        const body=boxWithSides(.8,h,.5,facadeMats('zres',level));
+        body.position.y=h/2+.04; g.add(body);
+        const roof=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.84,.06,.54),LM(0x8c4a3a)));
+        roof.position.y=h+.07; g.add(roof);
+        if(level>=4){
+          const wt=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.12,8),LM(0x5f8fbf));
+          wt.position.set(-.2,h+.16,-.1); g.add(wt);
+        }
+      }else{ // 塔式住宅 + 陽台
+        const h=.55+level*.3;
+        const body=boxWithSides(.62,h,.62,facadeMats('zres',level));
+        body.position.y=h/2+.04; g.add(body);
+        for(let i=0;i<level;i++){
+          const b=new THREE.Mesh(new THREE.BoxGeometry(.16,.04,.1),LM(0xd8cfc0));
+          b.position.set(.27,.2+i*(h/level),.36); g.add(b);
+        }
+        const roof=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.66,.06,.66),LM(0x8c4a3a)));
+        roof.position.y=h+.07; g.add(roof);
+      }
+    }
+    return g;
+  }
+  if(kind==='zcom'){
+    const podH=.2;
+    const pod=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.86,podH,.86),LM(0x8a97a8)));
+    pod.position.y=podH/2+.04; g.add(pod);
+    const podGlass=new THREE.Mesh(new THREE.BoxGeometry(.87,podH*.55,.87),LM(0x35506a));
+    podGlass.position.y=podH*.42+.04; g.add(podGlass);
+    const roofY0=podH+.04;
+    if(variant===1&&level>=2){ // 階梯式退台大樓
+      const segs=3;
+      let w=.62, y0=roofY0;
+      for(let s=0;s<segs;s++){
+        const sh=(.6+level*.42)/segs;
+        const glassCols=[0x5a8fb5,0x4a7fa5,0x6a9fc5,0x5588aa];
+        const t=shadowed(new THREE.Mesh(new THREE.BoxGeometry(w,sh,w),LM(pick(glassCols))));
+        t.position.y=y0+sh/2; g.add(t);
+        y0+=sh; w-=.14;
+      }
+      const ant=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.3,4),LM(0xcc3333));
+      ant.position.y=y0+.15; g.add(ant);
+      return g;
+    }
+    // 玻璃幕牆塔（含變體 0、2）
+    const h=.6+level*.42;
+    const glassCols=[0x5a8fb5,0x4a7fa5,0x6a9fc5,0x5588aa];
+    const tower=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.6,h,.6),LM(pick(glassCols))));
+    tower.position.y=h/2+roofY0; g.add(tower);
+    const stripe=new THREE.Mesh(new THREE.BoxGeometry(.62,h,.02),LM(0x9fc8dd));
+    stripe.position.set(0,h/2+roofY0,.31); g.add(stripe);
+    const stripe2=stripe.clone(); stripe2.position.z=-.31; g.add(stripe2);
+    const rim=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.64,.05,.64),LM(0x3a4a5c)));
+    rim.position.y=h+roofY0; g.add(rim);
+    if(level>=2){
+      const ac=new THREE.Mesh(new THREE.BoxGeometry(.14,.09,.14),LM(0xd8d8dc));
+      ac.position.set(rr(-.15,.15),h+roofY0+.08,rr(-.15,.15)); g.add(ac);
+    }
+    if(level>=3){ // 夜間發光招牌
+      const signTex=facadeTex('#2a3a4a',1,true);
+      const signMat=new THREE.MeshLambertMaterial({map:signTex,emissiveMap:signTex,
+        emissive:new THREE.Color(0xffffff),emissiveIntensity:0});
+      GLOW.push(signMat);
+      const sp=new THREE.Mesh(new THREE.BoxGeometry(.5,.12,.03),signMat);
+      sp.position.set(0,h+roofY0-.35,.32); g.add(sp);
+    }
+    if(level>=4){
+      const ant=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.35,4),LM(0xcc3333));
+      ant.position.y=h+roofY0+.2; g.add(ant);
+    }
+    return g;
+  }
+  // 工業變體
+  if(variant===1){ // 圓頂倉庫
+    const h=.3+level*.1;
+    const body=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,h,10),LM(0x9aa4ae)));
+    body.position.y=h/2+.04; g.add(body);
+    const dome=shadowed(new THREE.Mesh(new THREE.SphereGeometry(.4,12,8,0,Math.PI*2,0,Math.PI/2),LM(0x7f8a94)));
+    dome.position.y=h+.04; g.add(dome);
+    const door=new THREE.Mesh(new THREE.BoxGeometry(.24,.2,.03),LM(0x5f6a74));
+    door.position.set(0,.14,.41); g.add(door);
+    return g;
+  }
+  // 傳統工廠
+  const h=.35+level*.14;
+  const body=boxWithSides(.86,h,.86,facadeMats('zind',level));
+  body.position.y=h/2+.04; g.add(body);
+  for(let i=0;i<Math.min(level,4);i++){
+    const ch=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,.35+level*.09,8),LM(0x9a4436)));
+    ch.position.set(-.25+i*.17,h+.22,-.22); g.add(ch);
+    const band=new THREE.Mesh(new THREE.CylinderGeometry(.078,.078,.05,8),LM(0xd8d8d8));
+    band.position.set(-.25+i*.17,h+.1,-.22); g.add(band);
+  }
+  return g;
+}
+
+/* ===== 綠地與景觀 ===== */
+function makeTree(scale=1){
+  const t=new THREE.Group();
+  const tr=new THREE.Mesh(new THREE.CylinderGeometry(.035*scale,.05*scale,.2*scale,6),LM(0x6b4a2b));
+  tr.position.y=.1*scale; t.add(tr);
+  const leaf=LM(pick([0x2f8e3e,0x3a9e46,0x27753a]));
+  const s1=shadowed(new THREE.Mesh(new THREE.SphereGeometry(.13*scale,8,7),leaf));
+  s1.position.y=.28*scale; s1.scale.y=1.25; t.add(s1);
+  const s2=new THREE.Mesh(new THREE.SphereGeometry(.09*scale,8,7),leaf);
+  s2.position.y=.42*scale; t.add(s2);
+  return t;
+}
+function makePark(){
+  const g=new THREE.Group();
+  const lawn=new THREE.Mesh(new THREE.BoxGeometry(.95,.04,.95),LM(0x39a349));
+  lawn.position.y=.02; lawn.receiveShadow=true; g.add(lawn);
+  const path=new THREE.Mesh(new THREE.CircleGeometry(.18,16),LM(0xcdbfa0));
+  path.rotation.x=-Math.PI/2; path.position.y=.045; g.add(path);
+  const n=2+Math.floor(Math.random()*3);
+  for(let i=0;i<n;i++){
+    const t=makeTree(rr(.8,1.25));
+    t.position.set(rr(-.32,.32),0,rr(-.32,.32)); g.add(t);
+  }
+  return g;
+}
+function makeFountain(){
+  const g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.36,.4,.08,16),LM(0xc8c3b8));
+  base.position.y=.05; shadowed(base); g.add(base);
+  const basin=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.06,16),LM(0x5fb8d8));
+  basin.position.y=.11; g.add(basin);
+  const pillar=new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,.2,10),LM(0xd8d3c8));
+  pillar.position.y=.2; g.add(pillar);
+  // 噴泉水珠（粒子：中央噴上、拋物線落下）
+  const drops=[];
+  const dropGeo=new THREE.SphereGeometry(.022,6,5);
+  const dropMat=new THREE.MeshLambertMaterial({color:0xaee4f5,transparent:true,opacity:.85});
+  for(let i=0;i<10;i++){
+    const d=new THREE.Mesh(dropGeo,dropMat);
+    d.userData={a:Math.random()*Math.PI*2,r:rr(.08,.26),t:Math.random()};
+    g.add(d); drops.push(d);
+  }
+  g.userData.drops=drops;
+  FOUNTAINS.push(g);
+  return g;
+}
+function makePlaza(){
+  const g=new THREE.Group();
+  const pave=new THREE.Mesh(new THREE.BoxGeometry(.95,.04,.95),LM(0xc9c2b2));
+  pave.position.y=.02; pave.receiveShadow=true; g.add(pave);
+  const inlay=new THREE.Mesh(new THREE.BoxGeometry(.5,.045,.5),LM(0xb5ac99));
+  inlay.position.y=.022; g.add(inlay);
+  // 中央雕像：底座 + 人形柱 + 舉手
+  const ped=new THREE.Mesh(new THREE.BoxGeometry(.14,.16,.14),LM(0x8f8a7e));
+  ped.position.y=.12; g.add(ped);
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.045,.06,.22,8),LM(0x7a9a6a));
+  body.position.y=.3; g.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.045,8,7),LM(0x7a9a6a));
+  head.position.y=.44; g.add(head);
+  // 四角樹 + 花壇
+  for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
+    const t=makeTree(.8);
+    t.position.set(sx*.36,0,sz*.36); g.add(t);
+    const fl=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.03,8),LM(pick([0xe08aa8,0xe8c05a,0xd86a6a])));
+    fl.position.set(sx*.18,.04,sz*.18); g.add(fl);
+  }
+  return g;
+}
+
+/* ===== 水電設施 ===== */
+function makePower(){
+  const g=new THREE.Group();
+  const hall=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.9,.4,.42),LM(0xd9b23a)));
+  hall.position.set(0,.24,-.26); g.add(hall);
+  const roofLine=new THREE.Mesh(new THREE.BoxGeometry(.94,.06,.46),LM(0x5a5148));
+  roofLine.position.set(0,.47,-.26); g.add(roofLine);
+  const win=new THREE.Mesh(new THREE.BoxGeometry(.66,.12,.02),LM(0x9fd4e8));
+  win.position.set(0,.3,-.04); g.add(win);
+  for(const [dx,dz] of [[-.2,.18],[.2,.18]]){
+    const tw=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,.55,12),LM(0xe3e6ea)));
+    tw.position.set(dx,.55,dz); g.add(tw);
+    const waist=new THREE.Mesh(new THREE.CylinderGeometry(.085,.09,.1,12),LM(0xcfd4da));
+    waist.position.set(dx,.85,dz); g.add(waist);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(.095,.018,6,14),LM(0xc0392b));
+    ring.rotation.x=Math.PI/2; ring.position.set(dx,.93,dz); g.add(ring);
+    const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.3,8),LM(0x8a939e));
+    pipe.rotation.x=Math.PI/2.6; pipe.position.set(dx,.52,-.02); g.add(pipe);
+    // 蒸汽（動畫白煙）
+    const steam=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),
+      new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:.5}));
+    steam.position.set(dx,1.02,dz); g.add(steam);
+    g.userData.steam=g.userData.steam||[]; g.userData.steam.push(steam);
+  }
+  const trafo=new THREE.Mesh(new THREE.BoxGeometry(.14,.16,.14),LM(0x4a5a6a));
+  trafo.position.set(.34,.12,.1); g.add(trafo);
+  return g;
+}
+function makeWind(){
+  const g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,.08,10),LM(0x9aa2ac));
+  base.position.y=.04; g.add(base);
+  const tower=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.03,.06,.85,8),LM(0xe8eaee)));
+  tower.position.y=.5; g.add(tower);
+  const nac=new THREE.Mesh(new THREE.BoxGeometry(.16,.09,.09),LM(0xd8dce2));
+  nac.position.set(.02,.95,0); g.add(nac);
+  // 葉輪：旋轉面垂直於機艙朝向(+X)，葉片在 YZ 平面上伸展
+  const rotor=new THREE.Group();
+  const hub=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),LM(0xd8dce2));
+  rotor.add(hub);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.05,.1,8),LM(0xe8eaee));
+  nose.rotation.z=-Math.PI/2; nose.position.x=.07; rotor.add(nose);
+  for(let i=0;i<3;i++){
+    // 葉片沿 +Y 伸展，再繞 X 軸均分 120°（旋轉面 = YZ 平面）
+    const blade=new THREE.Group();
+    const root=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.025,.12,.08),LM(0xf2f4f8)));
+    root.position.y=.1; blade.add(root);
+    const tip=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.02,.28,.055),LM(0xf2f4f8)));
+    tip.position.y=.29; blade.add(tip);
+    blade.rotation.x=i*Math.PI*2/3;  // 繞 X（機艙軸向）分佈 → 葉面垂直於風向
+    rotor.add(blade);
+  }
+  rotor.position.set(.12,.95,0);
+  g.add(rotor);
+  g.userData.rotor=rotor;
+  return g;
+}
+function makeSolar(){
+  const g=new THREE.Group();
+  const slab=new THREE.Mesh(new THREE.BoxGeometry(.94,.04,.94),LM(0x8f959d));
+  slab.position.y=.02; g.add(slab);
+  for(let r=0;r<2;r++)for(let c=0;c<2;c++){
+    const panel=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.4,.03,.36),
+      new THREE.MeshLambertMaterial({color:0x1e3a5f})));
+    panel.position.set(-.23+c*.46,.14,-.23+r*.46);
+    panel.rotation.x=-.35;
+    g.add(panel);
+    const frame=new THREE.Mesh(new THREE.BoxGeometry(.42,.02,.02),LM(0xb8bec6));
+    frame.position.set(-.23+c*.46,.1,-.06+r*.46); g.add(frame);
+  }
+  const junction=new THREE.Mesh(new THREE.BoxGeometry(.08,.1,.08),LM(0x4a5a6a));
+  junction.position.set(.4,.09,.4); g.add(junction);
+  return g;
+}
+function makeWaterTower(){
+  const g=new THREE.Group();
+  const steel=LM(0x8a939e);
+  const legGeo=new THREE.CylinderGeometry(.03,.05,.66,6);
+  for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
+    const leg=new THREE.Mesh(legGeo,steel);
+    leg.position.set(sx*.14,.31,sz*.14);
+    leg.rotation.z=-sx*.14; leg.rotation.x=sz*.14;
+    shadowed(leg); g.add(leg);
+  }
+  for(const [h,r] of [[.18,.17],[.4,.21]]){
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(r,.018,6,16),steel);
+    ring.rotation.x=Math.PI/2; ring.position.y=h; g.add(ring);
+  }
+  const plate=new THREE.Mesh(new THREE.CylinderGeometry(.26,.22,.06,14),steel);
+  plate.position.y=.66; g.add(plate);
+  const tank=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.24,.27,.32,14),LM(0x4a7fb5)));
+  tank.position.y=.85; g.add(tank);
+  const band=new THREE.Mesh(new THREE.CylinderGeometry(.275,.275,.05,14),LM(0xd8d8d8));
+  band.position.y=.85; g.add(band);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(.27,.17,14),LM(0x35608c));
+  cap.position.y=1.1; g.add(cap);
+  return g;
+}
+
+/* ===== 公共建築 ===== */
+function serviceBase(w,d,h,color){
+  const b=shadowed(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),LM(color)));
+  b.position.y=h/2+.04; return b;
+}
+function makePolice(){
+  const g=new THREE.Group();
+  g.add(serviceBase(.84,.6,.4,0x3f5f9e));
+  const trim=new THREE.Mesh(new THREE.BoxGeometry(.88,.07,.64),LM(0xe8ecf2));
+  trim.position.y=.44; g.add(trim);
+  for(const dx of [-.22,.22]){
+    const col=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.26,8),LM(0xe8ecf2));
+    col.position.set(dx,.19,.36); g.add(col);
+  }
+  const lintel=new THREE.Mesh(new THREE.BoxGeometry(.56,.07,.1),LM(0xe8ecf2));
+  lintel.position.set(0,.36,.36); g.add(lintel);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,.03),LM(0x22304a));
+  door.position.set(0,.16,.315); g.add(door);
+  const badge=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.02,10),LM(0xf2d54e));
+  badge.rotation.x=Math.PI/2; badge.position.set(0,.34,.32); g.add(badge);
+  const light=new THREE.Mesh(new THREE.BoxGeometry(.1,.06,.1),
+    new THREE.MeshBasicMaterial({color:0x3a8ff2}));
+  light.position.set(0,.51,0); g.add(light);
+  const lot=new THREE.Mesh(new THREE.BoxGeometry(.3,.012,.24),LM(0x555a60));
+  lot.position.set(-.3,.046,.42); g.add(lot);
+  return g;
+}
+function makeFireSt(){
+  const g=new THREE.Group();
+  g.add(serviceBase(.86,.6,.36,0xb8443a));
+  const trim=new THREE.Mesh(new THREE.BoxGeometry(.9,.06,.64),LM(0x7e2a22));
+  trim.position.y=.4; g.add(trim);
+  for(const dx of [-.2,.16]){
+    const door=new THREE.Mesh(new THREE.BoxGeometry(.26,.22,.03),LM(0xf2d54e));
+    door.position.set(dx,.17,.315); g.add(door);
+    const stripe=new THREE.Mesh(new THREE.BoxGeometry(.26,.03,.032),LM(0xb8443a));
+    stripe.position.set(dx,.24,.318); g.add(stripe);
+  }
+  const twr=new THREE.Mesh(new THREE.BoxGeometry(.14,.5,.14),LM(0x8f3a32));
+  twr.position.set(.32,.3,-.18); g.add(twr);
+  const cab=new THREE.Mesh(new THREE.BoxGeometry(.18,.12,.18),LM(0x77c4e8));
+  cab.position.set(.32,.6,-.18); g.add(cab);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(.13,.14,4),LM(0x7e2a22));
+  cap.rotation.y=Math.PI/4; cap.position.set(.32,.73,-.18); g.add(cap);
+  return g;
+}
+function makeHospital(){
+  const g=new THREE.Group();
+  g.add(serviceBase(.84,.62,.55,0xeceef2));
+  const glass=new THREE.Mesh(new THREE.BoxGeometry(.86,.3,.02),LM(0x9fd4e8));
+  glass.position.set(0,.32,.315); g.add(glass);
+  const mullion=new THREE.Mesh(new THREE.BoxGeometry(.86,.02,.03),LM(0xc8ccd4));
+  mullion.position.set(0,.32,.325); g.add(mullion);
+  const trim=new THREE.Mesh(new THREE.BoxGeometry(.88,.07,.66),LM(0xb8c0cc));
+  trim.position.y=.58; g.add(trim);
+  const crossMat=new THREE.MeshBasicMaterial({color:0xe83a3a});
+  const cv=new THREE.Mesh(new THREE.BoxGeometry(.07,.2,.02),crossMat);
+  cv.position.set(0,.44,.33); g.add(cv);
+  const chh=new THREE.Mesh(new THREE.BoxGeometry(.2,.07,.02),crossMat);
+  chh.position.set(0,.44,.33); g.add(chh);
+  const pad=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,.02,16),LM(0x3a4048));
+  pad.position.set(.15,.63,-.1); g.add(pad);
+  const padRing=new THREE.Mesh(new THREE.TorusGeometry(.11,.012,6,20),
+    new THREE.MeshBasicMaterial({color:0xffffff}));
+  padRing.rotation.x=Math.PI/2; padRing.position.set(.15,.645,-.1); g.add(padRing);
+  const canopy=new THREE.Mesh(new THREE.BoxGeometry(.3,.03,.14),LM(0x4a90c2));
+  canopy.position.set(-.2,.3,.38); g.add(canopy);
+  return g;
+}
+function makeSchool(){
+  const g=new THREE.Group();
+  g.add(serviceBase(.86,.5,.34,0xc99a5b));
+  const wing=shadowed(new THREE.Mesh(new THREE.BoxGeometry(.34,.3,.34),LM(0xd4a869)));
+  wing.position.set(-.24,.19,-.28); g.add(wing);
+  const trim=new THREE.Mesh(new THREE.BoxGeometry(.9,.06,.54),LM(0x8a6437));
+  trim.position.y=.38; g.add(trim);
+  for(const dx of [-.28,-.08,.12,.32]){
+    const win=new THREE.Mesh(new THREE.BoxGeometry(.1,.12,.02),LM(0x9fd4e8));
+    win.position.set(dx,.2,.26); g.add(win);
+  }
+  const twr=new THREE.Mesh(new THREE.BoxGeometry(.12,.42,.12),LM(0xc99a5b));
+  twr.position.set(-.24,.55,-.28); g.add(twr);
+  const clock=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.02,12),
+    new THREE.MeshBasicMaterial({color:0xf2ead8}));
+  clock.rotation.x=Math.PI/2; clock.position.set(-.24,.68,-.21); g.add(clock);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(.1,.12,4),LM(0x8a6437));
+  cap.rotation.y=Math.PI/4; cap.position.set(-.24,.8,-.28); g.add(cap);
+  const field=new THREE.Mesh(new THREE.BoxGeometry(.4,.012,.3),LM(0x4fae5c));
+  field.position.set(.24,.046,.4); g.add(field);
+  const track=new THREE.Mesh(new THREE.BoxGeometry(.46,.011,.36),LM(0xc46a4a));
+  track.position.set(.24,.04,.4); g.add(track);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.4,6),LM(0xdddddd));
+  pole.position.set(.28,.6,.2); g.add(pole);
+  const flag=new THREE.Mesh(new THREE.PlaneGeometry(.14,.09),
+    new THREE.MeshBasicMaterial({color:0xd0342c,side:THREE.DoubleSide}));
+  flag.position.set(.35,.74,.2); g.add(flag);
+  return g;
+}
+function makeStadium(){
+  const g=new THREE.Group();
+  // 橢圓形看台（兩層環）
+  const stands=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.46,.5,.22,18),LM(0xc8c2b4)));
+  stands.position.y=.15; g.add(stands);
+  const stands2=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.36,.42,.16,18),LM(0xd8d2c4)));
+  stands2.position.y=.34; g.add(stands2);
+  // 內部草地球場
+  const field=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.03,16),LM(0x3f9e4c));
+  field.position.y=.06; g.add(field);
+  const line=new THREE.Mesh(new THREE.TorusGeometry(.2,.008,4,20),
+    new THREE.MeshBasicMaterial({color:0xffffff}));
+  line.rotation.x=Math.PI/2; line.position.y=.078; g.add(line);
+  // 四座泛光燈塔
+  for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
+    const p=new THREE.Mesh(new THREE.CylinderGeometry(.018,.024,.55,6),LM(0x8a939e));
+    p.position.set(sx*.44,.32,sz*.44); g.add(p);
+    const lamp=new THREE.Mesh(new THREE.BoxGeometry(.09,.04,.09),
+      new THREE.MeshBasicMaterial({color:0xfff2c8}));
+    lamp.position.set(sx*.44,.62,sz*.44); g.add(lamp);
+  }
+  return g;
+}
+
+/* ===== 廢墟與火焰 ===== */
+function makeRubble(){
+  const g=new THREE.Group();
+  for(let i=0;i<4;i++){
+    const r=new THREE.Mesh(new THREE.DodecahedronGeometry(rr(.08,.16)),LM(pick([0x7a7a7a,0x8a8078,0x6a6a6e])));
+    r.position.set(rr(-.3,.3),rr(.02,.08),rr(-.3,.3));
+    r.rotation.set(rr(0,3),rr(0,3),rr(0,3));
+    shadowed(r); g.add(r);
+  }
+  return g;
+}
+const FIRE_MAT_A=new THREE.MeshBasicMaterial({color:0xff7a1e,transparent:true,opacity:.85});
+const FIRE_MAT_B=new THREE.MeshBasicMaterial({color:0xffd23e,transparent:true,opacity:.9});
+function makeFlame(){
+  const g=new THREE.Group();
+  const a=new THREE.Mesh(new THREE.ConeGeometry(.18,.42,7),FIRE_MAT_A);
+  a.position.y=.3; g.add(a);
+  const b=new THREE.Mesh(new THREE.ConeGeometry(.1,.28,7),FIRE_MAT_B);
+  b.position.y=.34; g.add(b);
+  return g;
+}
+
+/* ================= 動畫登錄（噴泉/風車/蒸汽/雲）================= */
+const SPIN=[], FOUNTAINS=[], STEAM=[];
+const CLOUDS=[];
+(function makeClouds(){
+  const cm=new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:.85});
+  for(let i=0;i<10;i++){
+    const cl=new THREE.Group();
+    const n=3+Math.floor(Math.random()*3);
+    for(let j=0;j<n;j++){
+      const puff=new THREE.Mesh(new THREE.SphereGeometry(rr(.8,1.6),7,6),cm);
+      puff.position.set(j*rr(.8,1.4)-n*.5,rr(-.2,.2),rr(-.6,.6));
+      puff.scale.y=.55;
+      cl.add(puff);
+    }
+    cl.position.set(rr(-20,N+20),rr(16,26),rr(-20,N+20));
+    cl.userData.speed=rr(.25,.7);
+    scene.add(cl); CLOUDS.push(cl);
+  }
+})();
+
+/* ================= 道路 ================= */
+const ASPHALT=LM(0x2e2e34), CURB=LM(0xa9a89f);
+const LINE=new THREE.MeshBasicMaterial({color:0xf2d54e});
+const LINE_W=new THREE.MeshBasicMaterial({color:0xe8e8e8});
+const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+const CITY=new THREE.Group(); scene.add(CITY);
+function cellAt(x,y){return (x>=0&&y>=0&&x<N&&y<N)?grid[y][x]:null;}
+function isRoadAt(x,y){const c=cellAt(x,y);return c&&c.type==='road';}
+function buildRoadMesh(x,y){
+  const g=new THREE.Group();
+  // 路面 1.02 寬（相鄰重疊 0.02）消除格間細縫
+  const base=new THREE.Mesh(new THREE.BoxGeometry(1.02,.05,1.02),ASPHALT);
+  base.position.y=.025; base.receiveShadow=true; g.add(base);
+  const conns=DIRS.filter(([dx,dy])=>isRoadAt(x+dx,y+dy));
+  for(const [dx,dy] of DIRS){
+    if(conns.some(c=>c[0]===dx&&c[1]===dy))continue;
+    const w=.16;
+    // 人行道也加寬到 1.02，貼齊路面邊緣
+    const sw=new THREE.Mesh(new THREE.BoxGeometry(dx!==0?w:1.02,.09,dy!==0?w:1.02),CURB);
+    sw.position.set(dx*.43,.045,dy*.43); sw.receiveShadow=true; g.add(sw);
+  }
+  if(conns.length>=3){
+    for(const [dx,dy] of conns){
+      const px=dx!==0?1:0;
+      for(let i=-2;i<=2;i++){
+        const off=i*.085;
+        const bar=new THREE.Mesh(new THREE.BoxGeometry(px?.09:.4,.013,px?.4:.09),LINE_W);
+        bar.position.set(dx*.36+(px?0:off),.052,dy*.36+(px?off:0));
+        g.add(bar);
+      }
+    }
+  }else{
+    for(const [dx,dy] of conns){
+      for(const dpos of [.15,.34]){
+        const dash=new THREE.Mesh(new THREE.BoxGeometry(dx!==0?.16:.05,.013,dy!==0?.16:.05),LINE);
+        dash.position.set(dx*dpos,.052,dy*dpos);
+        g.add(dash);
+      }
+    }
+  }
+  return g;
+}
+function refreshRoad(x,y){
+  const c=cellAt(x,y);
+  if(!c||c.type!=='road')return;
+  if(c.mesh)CITY.remove(c.mesh);
+  c.mesh=buildRoadMesh(x,y);
+  c.mesh.position.set(x+.5,0,y+.5);
+  CITY.add(c.mesh);
+}
+function refreshRoadsAround(x,y){
+  DIRS.forEach(([dx,dy])=>refreshRoad(x+dx,y+dy));
+  refreshRoad(x,y);
+}
+
+/* ================= 建造選單工廠 ================= */
+function makeMeshFor(type,x,y){
+  switch(type){
+    case 'road':return buildRoadMesh(x,y);
+    case 'zres':case 'zcom':case 'zind':{
+      const g=new THREE.Group();
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(.92,.92),
+        new THREE.MeshBasicMaterial({color:ZONE_COL[type],transparent:true,opacity:.3}));
+      pl.rotation.x=-Math.PI/2; pl.position.y=.045; g.add(pl);
+      const edge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(.92,.92)),
+        new THREE.LineBasicMaterial({color:ZONE_COL[type]}));
+      edge.rotation.x=-Math.PI/2; edge.position.y=.05; g.add(edge);
+      return g;
+    }
+    case 'park':return makePark();
+    case 'fountain':return makeFountain();
+    case 'plaza':return makePlaza();
+    case 'power':return makePower();
+    case 'wind':return makeWind();
+    case 'solar':return makeSolar();
+    case 'water':return makeWaterTower();
+    case 'police':return makePolice();
+    case 'firest':return makeFireSt();
+    case 'hospital':return makeHospital();
+    case 'school':return makeSchool();
+    case 'stadium':return makeStadium();
+    case 'rubble':return makeRubble();
+  }
+  return null;
+}
+
+/* ================= 施工動畫系統 ================= */
+const CONSTRUCTIONS=[];
+const SCAFFOLD_MAT=LM(0xc98a3e);
+const CRANE_MAT=LM(0xf2a03a);
+function addScaffold(g,h){
+  const poleGeo=new THREE.CylinderGeometry(.016,.016,h,5);
+  for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
+    const p=new THREE.Mesh(poleGeo,SCAFFOLD_MAT);
+    p.position.set(sx*.42,h/2+.04,sz*.42); g.add(p);
+  }
+  for(let y=.18;y<h;y+=.32){
+    for(const sz of [-1,1]){
+      const bar=new THREE.Mesh(new THREE.BoxGeometry(.86,.018,.018),SCAFFOLD_MAT);
+      bar.position.set(0,y,sz*.42); g.add(bar);
+    }
+    for(const sx of [-1,1]){
+      const bar2=new THREE.Mesh(new THREE.BoxGeometry(.018,.018,.86),SCAFFOLD_MAT);
+      bar2.position.set(sx*.42,y,0); g.add(bar2);
+    }
+  }
+}
+function makeCrane(h){
+  const g=new THREE.Group();
+  const mastH=Math.max(h+.35,1);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(.14,.05,.14),CRANE_MAT);
+  base.position.y=.03; g.add(base);
+  const mast=new THREE.Mesh(new THREE.BoxGeometry(.05,mastH,.05),CRANE_MAT);
+  mast.position.y=mastH/2; g.add(mast);
+  const cab=new THREE.Group();
+  const cabBox=new THREE.Mesh(new THREE.BoxGeometry(.1,.08,.1),LM(0x4a5a6a));
+  cabBox.position.y=.04; cab.add(cabBox);
+  const jib=new THREE.Mesh(new THREE.BoxGeometry(.7,.025,.035),CRANE_MAT);
+  jib.position.set(.28,mastH+.02,0); cab.add(jib);
+  const counter=new THREE.Mesh(new THREE.BoxGeometry(.2,.03,.04),CRANE_MAT);
+  counter.position.set(-.16,mastH+.02,0); cab.add(counter);
+  const weight=new THREE.Mesh(new THREE.BoxGeometry(.06,.07,.06),LM(0x555a60));
+  weight.position.set(-.24,mastH-.02,0); cab.add(weight);
+  const cable=new THREE.Mesh(new THREE.BoxGeometry(.008,.22,.008),LM(0x333333));
+  cable.position.set(.45,mastH-.12,0); cab.add(cable);
+  const load=new THREE.Mesh(new THREE.BoxGeometry(.16,.04,.08),LM(0xb0b6bd));
+  load.position.set(.45,mastH-.25,0); cab.add(load);
+  g.add(cab);
+  g.userData.cab=cab;
+  return g;
+}
+function startConstruction(x,y,type,mesh){
+  mesh.position.set(x+.5,0,y+.5);
+  CITY.add(mesh);
+  if(type!=='road'&&type!=='rubble'){
+    let h=1;
+    mesh.traverse(o=>{
+      if(o.isMesh&&o.geometry&&o.geometry.parameters&&o.geometry.parameters.height)h=Math.max(h,o.geometry.parameters.height);
+      if(o.isMesh&&o.position.y)h=Math.max(h,o.position.y+.1);
+    });
+    addScaffold(mesh,Math.max(h,.7));
+    const crane=makeCrane(Math.max(h,.7));
+    crane.position.x=x+.42; crane.position.z=y-.38;
+    CITY.add(crane);
+    CONSTRUCTIONS.push({g:mesh,t:0,crane});
+  }
+  // 登記動畫物件（風車/噴泉/蒸汽）
+  registerAnim(mesh);
+  return mesh;
+}
+function registerAnim(g){
+  g.traverse(o=>{
+    if(o.userData&&o.userData.rotor)SPIN.push(o);
+    if(o.userData&&o.userData.drops)FOUNTAINS.push(o);
+    if(o.userData&&o.userData.steam)o.userData.steam.forEach(s=>STEAM.push(s));
+  });
+}
+function stepConstructions(dt){
+  for(let i=CONSTRUCTIONS.length-1;i>=0;i--){
+    const co=CONSTRUCTIONS[i];
+    co.t+=dt/3;
+    co.crane.userData.cab.rotation.y+=dt*.7;
+    if(co.t>=1){
+      const junk=[];
+      co.g.traverse(o=>{if(o.material===SCAFFOLD_MAT)junk.push(o);});
+      junk.forEach(o=>o.parent.remove(o));
+      CITY.remove(co.crane);
+      co.g.scale.y=1; co.g.position.y=0;
+      CONSTRUCTIONS.splice(i,1);
+      continue;
+    }
+    const grow=Math.min(1,co.t/.72);
+    co.g.scale.y=.02+grow*.98;
+    co.g.position.y=co.t>.85?Math.sin(co.t*60)*.004*(1-co.t)/.15:0;
+  }
+}
+
+/* ================= 放置／移除 ================= */
+let tool='road';
+function place(type,x,y,cost){
+  if(money<cost)return fail('錢不夠！需要 $'+cost);
+  if(cellAt(x,y))return fail('這格已被佔用');
+  const mesh=makeMeshFor(type,x,y);
+  startConstruction(x,y,type,mesh);
+  grid[y][x]={type,mesh,dev:false,level:1,supplied:{p:false,w:false},burn:0};
+  money-=cost;
+  refreshRoadsAround(x,y);
+  return true;
+}
+function removeCell(x,y){
+  const c=cellAt(x,y);
+  if(!c)return fail('這格是空的');
+  if(c.burn>0)return fail('火災中無法拆除！');
+  if(money<T.bulldoze.c)return fail('錢不夠！');
+  money-=T.bulldoze.c;
+  killFlame(c);
+  const ci=CONSTRUCTIONS.findIndex(co=>co.g===c.mesh);
+  if(ci>=0){CITY.remove(CONSTRUCTIONS[ci].crane);CONSTRUCTIONS.splice(ci,1);}
+  CITY.remove(c.mesh);
+  grid[y][x]=null;
+  refreshRoadsAround(x,y);
+  return true;
+}
+function swapMesh(c,x,y,mesh){
+  const ci=CONSTRUCTIONS.findIndex(co=>co.g===c.mesh);
+  if(ci>=0){CITY.remove(CONSTRUCTIONS[ci].crane);CONSTRUCTIONS.splice(ci,1);}
+  CITY.remove(c.mesh);
+  c.mesh=mesh; mesh.position.set(x+.5,0,y+.5); CITY.add(mesh);
+  registerAnim(mesh);
+}
+function fail(t){toast(t,'bad');return false;}
+
+/* ================= 供水供電 ================= */
+function floodUtil(kind){
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x]; if(c)c.supplied[kind]=false;
+  }
+  const sources=[], roadQ=[];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(!c)continue;
+    if(kind==='p'&&(c.type==='power'||c.type==='wind'||c.type==='solar')){
+      c.supplied[kind]=true; sources.push([x,y]);
+      DIRS.forEach(([dx,dy])=>{ if(isRoadAt(x+dx,y+dy))roadQ.push([x+dx,y+dy]); });
+    }else if(kind==='w'&&c.type==='water'){
+      c.supplied[kind]=true; sources.push([x,y]);
+      DIRS.forEach(([dx,dy])=>{ if(isRoadAt(x+dx,y+dy))roadQ.push([x+dx,y+dy]); });
+    }
+  }
+  const seen=new Set();
+  while(roadQ.length){
+    const [x,y]=roadQ.pop(), k=x+','+y;
+    if(seen.has(k))continue; seen.add(k);
+    grid[y][x].supplied[kind]=true;
+    DIRS.forEach(([dx,dy])=>{ if(isRoadAt(x+dx,y+dy)&&!seen.has((x+dx)+','+(y+dy)))roadQ.push([x+dx,y+dy]); });
+  }
+  for(const k of seen){
+    const [x,y]=k.split(',').map(Number);
+    DIRS.forEach(([dx,dy])=>{
+      const c=cellAt(x+dx,y+dy); if(c)c.supplied[kind]=true;
+    });
+  }
+  for(const [sx,sy] of sources){
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const c=cellAt(sx+dx,sy+dy); if(c)c.supplied[kind]=true;
+    }
+  }
+  let use=0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(!c)continue;
+    // 分區建築：只有 dev（已建成）才耗水電
+    if(c.dev){
+      if(kind==='p'){
+        use+=({zres:c.level*2,zcom:c.level*3,zind:c.level*4})[c.type]||0;
+      }else{
+        use+=({zres:c.level*1.5,zcom:c.level*2,zind:c.level*2.5})[c.type]||0;
+      }
+    }else{
+      // 公共/景觀設施：依存在即計算
+      if(kind==='p'){
+        use+=({police:5,firest:5,hospital:6,school:5,stadium:10,water:5,fountain:1,plaza:1,power:8,wind:2,solar:1})[c.type]||0;
+      }else{
+        use+=({park:1,fountain:2,plaza:1,hospital:5,police:2,firest:2,school:2,stadium:8})[c.type]||0;
+      }
+    }
+  }
+  let cap=0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(!c)continue;
+    // 電源/水塔依「存在」計算容量（不受 dev 影響）
+    if(kind==='p')cap+=POWER_CAP[c.type]||0;
+    else if(c.type==='water')cap+=70;
+  }
+  SHORT[kind]=use>cap;
+}
+
+/* ================= 覆蓋與污染 ================= */
+function coverage(types,radius){
+  const m=new Uint8Array(N*N);
+  const arr=Array.isArray(types)?types:[types];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(c&&arr.includes(c.type)){
+      for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
+        if(dx*dx+dy*dy<=radius*radius){
+          const xx=x+dx,yy=y+dy;
+          if(xx>=0&&yy>=0&&xx<N&&yy<N)m[yy*N+xx]=1;
+        }
+      }
+    }
+  }
+  return m;
+}
+let COV={}, POLL=null;
+function computeOverlays(){
+  COV={police:coverage('police',7),firest:coverage('firest',7),
+       hospital:coverage('hospital',7),school:coverage('school',7),
+       park:coverage(['park','fountain','plaza'],3),stadium:coverage('stadium',10)};
+  POLL=new Float32Array(N*N);
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(c&&c.dev&&c.type==='zind'){
+      for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+        const xx=x+dx,yy=y+dy;
+        if(xx>=0&&yy>=0&&xx<N&&yy<N)POLL[yy*N+xx]+=c.level*.3/(1+Math.abs(dx)+Math.abs(dy));
+      }
+    }
+    if(c&&c.type==='power'&&c.dev){
+      for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+        const xx=x+dx,yy=y+dy;
+        if(xx>=0&&yy>=0&&xx<N&&yy<N)POLL[yy*N+xx]+=.25/(1+Math.abs(dx)+Math.abs(dy));
+      }
+    }
+    if(c&&['park','fountain','plaza'].includes(c.type)){
+      for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+        const xx=x+dx,yy=y+dy;
+        if(xx>=0&&yy>=0&&xx<N&&yy<N)POLL[yy*N+xx]-=.15;
+      }
+    }
+  }
+}
+
+/* ================= 火災 ================= */
+let FIRES=[];
+function ignite(c,x,y){
+  if(c.burn>0)return;
+  c.burn=6;
+  const f=makeFlame(); f.position.set(x+.5,.1,y+.5);
+  CITY.add(f); FIRES.push({c,f,x,y});
+  toast('🔥 建築物失火了！','bad');
+}
+function killFlame(c){
+  const i=FIRES.findIndex(e=>e.c===c);
+  if(i>=0){CITY.remove(FIRES[i].f);FIRES.splice(i,1);c.burn=0;}
+}
+
+/* ================= 模擬主循環 ================= */
+function simulate(){
+  tick++;
+  floodUtil('p'); floodUtil('w');
+  computeOverlays();
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(!c||!ZONES.includes(c.type)||c.burn>0)continue;
+    const req=DIRS.some(([dx,dy])=>isRoadAt(x+dx,y+dy))&&c.supplied.p&&!SHORT.p&&c.supplied.w&&!SHORT.w;
+    if(!c.dev){
+      if(req&&demand[c.type]>.12&&Math.random()<.12*Math.min(1,demand[c.type]+.2)){
+        c.dev=true; c.level=1;
+        swapMesh(c,x,y,startConstruction(x,y,c.type,buildBuildingMesh(c.type,1,x,y)));
+      }
+    }else{
+      if(!req){
+        if(Math.random()<.05){
+          c.level--;
+          if(c.level<1){c.dev=false;swapMesh(c,x,y,makeMeshFor(c.type,x,y));}
+          else swapMesh(c,x,y,buildBuildingMesh(c.type,c.level,x,y));
+        }
+      }else if(demand[c.type]>.25&&c.level<5&&Math.random()<.04){
+        c.level++;
+        swapMesh(c,x,y,startConstruction(x,y,c.type,buildBuildingMesh(c.type,c.level,x,y)));
+      }
+      if((c.type==='zind'||c.type==='zcom')&&Math.random()<.0016)ignite(c,x,y);
+    }
+  }
+  for(let i=FIRES.length-1;i>=0;i--){
+    const e=FIRES[i];
+    if(COV.firest[e.y*N+e.x]&&Math.random()<.8){
+      killFlame(e.c); toast('🚒 消防隊撲滅了火災！','good'); continue;
+    }
+    e.c.burn--;
+    if(e.c.burn<=0){
+      killFlame(e.c);
+      swapMesh(e.c,e.x,e.y,makeRubble());
+      e.c.type='rubble'; e.c.dev=false; toast('🏚 建築物已燒毀成廢墟','bad');
+      continue;
+    }
+    if(Math.random()<.1){
+      const [dx,dy]=pick(DIRS);
+      const n=cellAt(e.x+dx,e.y+dy);
+      if(n&&ZONES.includes(n.type)&&n.dev&&n.burn===0)ignite(n,e.x+dx,e.y+dy);
+    }
+  }
+  let capacity=0,jc=0,ji=0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x]; if(!c||!c.dev)continue;
+    if(c.type==='zres')capacity+=RES_POP[c.level];
+    else if(c.type==='zcom')jc+=JOB_COM[c.level];
+    else if(c.type==='zind')ji+=JOB_IND[c.level];
+  }
+  jobs=jc+ji;
+  let hs=0,hn=0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(!c||!c.dev||c.type!=='zres')continue;
+    const k=y*N+x;
+    let s=-POLL[k]*5+(COV.park[k]?3:0)+(COV.police[k]?4:0)+(COV.hospital[k]?4:0)+(COV.school[k]?3:0)+(COV.stadium[k]?8:0)-(COV.firest[k]?0:-2);
+    s-=(taxRate-9)*1.1;
+    if(SHORT.p)s-=6; if(SHORT.w)s-=5;
+    hs+=s; hn++;
+  }
+  const employment=pop>2?Math.min(1,(jobs*1.15)/pop):.7;
+  const target=hn?Math.max(5,Math.min(100,45+hs/hn+employment*15)):55;
+  happy+=(target-happy)*.3; happy=Math.round(happy);
+  const popTarget=Math.round(capacity*Math.max(.25,Math.min(1.1,happy/70)));
+  pop+=Math.ceil((popTarget-pop)*.18); pop=Math.max(0,pop);
+  demand.zres=Math.max(0,Math.min(1,.35+(jobs-pop)/60-(taxRate-9)*.04+(pop<8?.3:0)));
+  const ct=pop*.35, it=pop*.45;
+  demand.zcom=Math.max(0,Math.min(1,(ct-jc)/Math.max(8,pop*.25)));
+  demand.zind=Math.max(0,Math.min(1,(it-ji)/Math.max(8,pop*.25)));
+  lastIncome=Math.round((pop*.9+jc*1.3+ji*1.0)*(taxRate/9));
+  lastUpkeep=0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(c&&T[c.type]&&T[c.type].u)lastUpkeep+=T[c.type].u;
+  }
+  lastNet=lastIncome-lastUpkeep;
+  money+=lastNet;
+  if(money<-2000){money=-2000;toast('破產了！降低支出或提高稅收','bad');}
+  if(tick%15===0)save(true);
+  updateUI();
+}
+
+/* ================= 車流 ================= */
+const CAR_COLORS=[0xd9483b,0x3b7dd9,0xe8b23a,0x49b675,0xdddddd,0x444444];
+const cars=[];
+function spawnCar(){
+  const roads=[];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(grid[y][x]&&grid[y][x].type==='road')roads.push([x,y]);
+  if(!roads.length)return;
+  const [x,y]=pick(roads);
+  const opts=DIRS.filter(([dx,dy])=>isRoadAt(x+dx,y+dy));
+  if(!opts.length)return;
+  const [dx,dy]=pick(opts);
+  const g=new THREE.Group();
+  const paint=LM(pick(CAR_COLORS));
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.3,.08,.15),paint);
+  body.position.y=.07; body.castShadow=true; g.add(body);
+  const cab=new THREE.Mesh(new THREE.BoxGeometry(.16,.06,.14),LM(0x223344));
+  cab.position.set(-.02,.13,0); g.add(cab);
+  const hl=new THREE.Mesh(new THREE.BoxGeometry(.02,.03,.12),
+    new THREE.MeshBasicMaterial({color:0xfff2b0}));
+  hl.position.set(.155,.07,0); g.add(hl);
+  const tl=new THREE.Mesh(new THREE.BoxGeometry(.02,.025,.12),
+    new THREE.MeshBasicMaterial({color:0xff3020}));
+  tl.position.set(-.155,.07,0); g.add(tl);
+  const wg=new THREE.CylinderGeometry(.035,.035,.03,8);
+  const wm=LM(0x1a1a1a);
+  for(const [wx,wz] of [[.09,.08],[.09,-.08],[-.09,.08],[-.09,-.08]]){
+    const w=new THREE.Mesh(wg,wm);
+    w.rotation.x=Math.PI/2;
+    w.position.set(wx,.035,wz);
+    g.add(w);
+  }
+  g.position.set(x+.5,.05,y+.5);
+  CITY.add(g);
+  cars.push({m:g,x,y,dx,dy,t:0});
+}
+function stepCars(dt){
+  let want=0;
+  for(let y=0;y<N;y+=4)for(let x=0;x<N;x+=4)if(grid[y][x]&&grid[y][x].type==='road')want++;
+  want=Math.min(36,want*3);
+  if(cars.length<want&&Math.random()<.1)spawnCar();
+  const SPEED=.9;
+  for(let i=cars.length-1;i>=0;i--){
+    const c=cars[i];
+    if(!isRoadAt(c.x,c.y)||!isRoadAt(c.x+c.dx,c.y+c.dy)){CITY.remove(c.m);cars.splice(i,1);continue;}
+    c.t+=dt*SPEED;
+    while(c.t>=1){
+      c.t-=1; c.x+=c.dx; c.y+=c.dy;
+      const opts=DIRS.filter(([dx,dy])=>isRoadAt(c.x+dx,c.y+dy));
+      if(!opts.length){CITY.remove(c.m);cars.splice(i,1);c.t=-1;break;}
+      const straight=opts.find(([dx,dy])=>dx===c.dx&&dy===c.dy);
+      const noBack=opts.filter(([dx,dy])=>!(dx===-c.dx&&dy===-c.dy));
+      const pool=noBack.length?noBack:opts;
+      let nd=(straight&&pool.includes(straight)&&Math.random()<.65)?straight:pick(pool);
+      c.dx=nd[0]; c.dy=nd[1];
+    }
+    if(c.t<0)continue;
+    const rx=-c.dy*.18, rz=c.dx*.18;
+    c.m.position.set(c.x+.5+c.dx*c.t+rx,.05,c.y+.5+c.dy*c.t+rz);
+    c.m.rotation.y=Math.atan2(-c.dy,c.dx);
+  }
+}
+
+/* ================= 晝夜 ================= */
+let dayT=DAY_LEN*.3;
+function stepDayNight(dt){
+  dayT=(dayT+dt)%DAY_LEN;
+  const ang=dayT/DAY_LEN*Math.PI*2-Math.PI/2;
+  const sh=Math.sin(ang);
+  const day=Math.max(0,Math.min(1,sh*2+.25));
+  sun.intensity=day*1.15;
+  amb.intensity=.12+day*.3;
+  sun.position.set(ctrl.target.x+Math.cos(ang)*70,Math.max(6,sh*80+10),ctrl.target.z+30);
+  sun.target.position.copy(ctrl.target);
+  const sky=SKY_NIGHT.clone().lerp(SKY_DAY,day);
+  if(Math.abs(sh)<.18)sky.lerp(SKY_SET,.45*(1-Math.abs(sh)/.18));
+  scene.background.copy(sky);
+  scene.fog.color.copy(sky);
+  const night=1-day;
+  for(const m of GLOW)m.emissiveIntensity=night*1.1;
+}
+
+/* ================= UI ================= */
+const $=id=>document.getElementById(id);
+function toast(t,cls){
+  const el=document.createElement('div');
+  el.className='toast '+(cls||''); el.textContent=t;
+  $('toasts').appendChild(el);
+  setTimeout(()=>el.remove(),3800);
+}
+function updateUI(){
+  $('money').textContent=Math.round(money).toLocaleString();
+  $('pop').textContent=pop.toLocaleString();
+  $('jobs').textContent=jobs.toLocaleString();
+  $('happy').textContent=happy;
+  const yr=2026+Math.floor(tick/12), mo=tick%12+1;
+  $('date').textContent=yr+'年'+mo+'月';
+  $('net').textContent=(lastNet>=0?'+':'')+lastNet.toLocaleString();
+  $('net').style.color=lastNet>=0?'#8ef2a0':'#ff8f7d';
+  $('short').textContent=(SHORT.p?'⚡缺電 ':'')+(SHORT.w?'💧缺水':'');
+  $('bar-zres').style.height=Math.round(demand.zres*100)+'%';
+  $('bar-zcom').style.height=Math.round(demand.zcom*100)+'%';
+  $('bar-zind').style.height=Math.round(demand.zind*100)+'%';
+}
+$('tax').oninput=e=>{taxRate=+e.target.value;$('taxval').textContent=taxRate;};
+
+/* ===== 分類建造列 ===== */
+const catbar=$('catbar'), buildpanel=$('buildpanel');
+let openCat=null;
+for(const cat of CATS){
+  const el=document.createElement('div');
+  el.className='cat'; el.dataset.cat=cat.id;
+  el.innerHTML='<span class="ico">'+cat.ico+'</span><span class="nm">'+cat.nm+'</span>';
+  el.onclick=()=>toggleCat(cat.id,el);
+  catbar.appendChild(el);
+}
+function toggleCat(id,el){
+  if(openCat===id){closePanel();return;}
+  openCat=id;
+  document.querySelectorAll('.cat').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  const cat=CATS.find(c=>c.id===id);
+  buildpanel.innerHTML='';
+  for(const key of cat.items){
+    const t=T[key];
+    const card=document.createElement('div');
+    card.className='bcard'+(tool===key?' sel':'');
+    card.innerHTML='<div class="ico">'+t.ico+'</div><div class="nm">'+t.n+'</div>'+
+      '<div class="cost">$'+t.c+'</div>'+
+      (t.u?'<div class="up">維護 $'+t.u+'/月</div>':'')+
+      '<div class="desc">'+t.d+'</div>';
+    card.onclick=()=>{
+      tool=key;
+      document.querySelectorAll('.bcard').forEach(e=>e.classList.remove('sel'));
+      card.classList.add('sel');
+    };
+    buildpanel.appendChild(card);
+  }
+  buildpanel.classList.add('open');
+}
+function closePanel(){
+  openCat=null;
+  buildpanel.classList.remove('open');
+  document.querySelectorAll('.cat').forEach(e=>e.classList.remove('active'));
+}
+addEventListener('keydown',e=>{
+  if(e.key==='Escape')closePanel();
+  if(e.key==='r'||e.key==='R'){
+    tool='bulldoze'; closePanel();
+    toggleCat('bulldoze',document.querySelector('[data-cat=bulldoze]'));
+    document.querySelector('[data-cat=bulldoze] .bcard');
+    const cards=buildpanel.querySelectorAll('.bcard');
+    if(cards.length)cards[0].classList.add('sel');
+  }
+});
+
+/* ================= 新手教學 ================= */
+const TUTORIAL=[
+  {goal:'road',   count:6, text:'歡迎來到 MiniCity！🏙 先打開下方「🛣 道路」分類，鋪一段路（至少 6 格）。',
+   done:'道路鋪好了！', reward:200},
+  {goal:'power',  count:1, text:'打開「⚡ 水電」分類，蓋一座火力電廠（放路邊，沿路供電）。',
+   done:'電廠運轉中！', reward:300},
+  {goal:'water',  count:1, text:'再蓋一座 💧 水塔（同樣放路邊）。',
+   done:'供水正常！', reward:300},
+  {goal:'zres',   count:8, text:'打開「🏘 分區」，劃分 🏠 住宅區（至少 8 格，貼著道路，可拖曳連畫）。',
+   done:'住宅區劃好了，建築會自己長出來。', reward:400},
+  {goal:'zcom',   count:4, text:'劃分 🏢 商業區（至少 4 格）。',
+   done:'商業區完成！看 RCI 條判斷需求。', reward:400},
+  {goal:'zind',   count:4, text:'最後劃 🏭 工業區（至少 4 格），離住宅遠一點。',
+   done:'教學完成！🎉 城市開始運作。', reward:800},
+];
+let tutStep=0;
+const tutPanel=document.createElement('div');
+tutPanel.className='panel';
+tutPanel.style.cssText='bottom:74px;left:10px;padding:10px 14px;max-width:300px;font-size:12.5px;line-height:1.7;';
+document.body.appendChild(tutPanel);
+function tutCount(goal){
+  let n=0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(c&&c.type===goal)n++;
+  }
+  return n;
+}
+function tutRender(){
+  if(tutStep>=TUTORIAL.length){
+    tutPanel.innerHTML='✅ <b>教學已完成</b> —— 自由發展你的城市吧！';
+    setTimeout(()=>{tutPanel.style.opacity='0';tutPanel.style.transition='opacity 1s';},10000);
+    return;
+  }
+  const t=TUTORIAL[tutStep];
+  tutPanel.innerHTML='📋 <b>任務 '+(tutStep+1)+'/'+TUTORIAL.length+'</b>　獎勵 <span style="color:#ffd75e">$'+t.reward+'</span>'+
+    '<br>'+t.text+'<br><small>進度：'+Math.min(tutCount(t.goal),t.count)+' / '+t.count+'</small>';
+}
+function tutUpdate(){
+  if(tutStep>=TUTORIAL.length)return;
+  const t=TUTORIAL[tutStep];
+  if(tutCount(t.goal)>=t.count){
+    money+=t.reward;
+    toast('✔ '+t.done+' (+$'+t.reward+')','good');
+    tutStep++;
+    save(true);
+    tutRender();
+  }
+}
+
+/* ================= 存讀檔 ================= */
+const SAVE_KEY='minicity3dv2';
+function save(silent){
+  const g=[];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    g.push(c?[c.type,c.dev?1:0,c.level]:0);
+  }
+  localStorage.setItem(SAVE_KEY,JSON.stringify(
+    {v:2,money:Math.round(money),taxRate,tick,pop,happy,tutStep,g}));
+  if(!silent)toast('💾 已存檔','good');
+}
+function clearWorld(){
+  while(CITY.children.length)CITY.remove(CITY.children[0]);
+  FIRES=[];
+  cars.length=0;
+  CONSTRUCTIONS.length=0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)grid[y][x]=null;
+}
+function load(){
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw)return toast('找不到存檔','bad');
+  const d=JSON.parse(raw);
+  clearWorld();
+  money=d.money; taxRate=d.taxRate; tick=d.tick; pop=d.pop; happy=d.happy;
+  tutStep=Math.min(d.tutStep||0,TUTORIAL.length);
+  $('tax').value=taxRate; $('taxval').textContent=taxRate;
+  for(let i=0;i<N*N;i++){
+    const v=d.g[i]; if(!v)continue;
+    const x=i%N, y=Math.floor(i/N);
+    const [type,dev,level]=v;
+    let mesh;
+    if(ZONES.includes(type)) mesh=dev?buildBuildingMesh(type,level,x,y):makeMeshFor(type,x,y);
+    else mesh=makeMeshFor(type,x,y);
+    mesh.position.set(x+.5,0,y+.5);
+    CITY.add(mesh);
+    registerAnim(mesh);
+    grid[y][x]={type,mesh,dev:!!dev,level,supplied:{p:false,w:false},burn:0};
+  }
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(grid[y][x]&&grid[y][x].type==='road')refreshRoad(x,y);
+  toast('📂 存檔已載入','good');
+  tutRender();
+  updateUI();
+}
+function newCity(){
+  if(!confirm('確定放棄目前的城市重新開始？'))return;
+  clearWorld(); localStorage.removeItem(SAVE_KEY);
+  money=30000; taxRate=9; tick=0; pop=0; jobs=0; happy=55; lastNet=0;
+  demand={zres:.45,zcom:.15,zind:.15};
+  tutStep=0; tutRender();
+  $('tax').value=9; $('taxval').textContent=9;
+  toast('♻️ 新城市','good');
+  updateUI();
+}
+$('btn-save').onclick=()=>save(false);
+$('btn-load').onclick=load;
+
+/* ================= 雲端存檔（Google Drive via GIS OAuth）================= */
+/* 使用方式：
+   1. 到 https://console.cloud.google.com 建立專案 → 啟用 Google Drive API
+   2. 建立「OAuth 用戶端 ID」（類型：網頁應用程式），授權來源加 file:// 或你的網址
+   3. 複製 Client ID，貼進下方 GOOGLE_CLIENT_ID 或遊戲內「🔑 設定 Google 連結」 */
+const GOOGLE_CLIENT_ID=''; // ← 可直接貼上你的 Client ID
+let gToken=null, gUser=null, gFileId=localStorage.getItem('mc_gdrive_file')||null;
+const CLOUD_NAME='minicity-save.json';
+
+function loadGisScript(){
+  return new Promise((res,rej)=>{
+    if(window.google&&window.google.accounts)return res();
+    const s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client';
+    s.onload=res; s.onerror=()=>rej(new Error('無法載入 Google 登入元件'));
+    document.head.appendChild(s);
+  });
+}
+function getClientId(){
+  const saved=localStorage.getItem('mc_gdrive_client');
+  return GOOGLE_CLIENT_ID||saved||'';
+}
+async function gAuth(){
+  const cid=getClientId();
+  if(!cid){
+    const input=prompt('尚未設定 Google 連結。\n\n1. 前往 console.cloud.google.com 建立 OAuth 用戶端 ID（網頁應用程式）\n2. 授權來源加入本檔案位置\n3. 貼上 Client ID：');
+    if(!input)return false;
+    localStorage.setItem('mc_gdrive_client',input.trim());
+    toast('已儲存 Client ID，再按一次雲端存檔登入','good');
+    return false;
+  }
+  await loadGisScript();
+  return new Promise((res)=>{
+    const tc=google.accounts.oauth2.initTokenClient({
+      client_id:cid,
+      scope:'https://www.googleapis.com/auth/drive.file',
+      callback:(resp)=>{
+        if(resp.access_token){gToken=resp.access_token;res(true);}
+        else{toast('Google 登入取消或失敗','bad');res(false);}
+      }
+    });
+    tc.requestAccessToken();
+  });
+}
+async function gApi(method,url,body){
+  const opts={method,headers:{Authorization:'Bearer '+gToken,'Content-Type':'application/json'}};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(url,opts);
+  if(r.status===401){gToken=null;throw new Error('登入逾時，請重新登入');}
+  if(!r.ok)throw new Error('Google API 錯誤 '+r.status);
+  return r.json();
+}
+async function findCloudFile(){
+  const q=encodeURIComponent("name='"+CLOUD_NAME+"' and trashed=false");
+  const d=await gApi('GET','https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name)');
+  return d.files&&d.files.length?d.files[0].id:null;
+}
+$('btn-cloud').onclick=async()=>{
+  try{
+    if(!gToken&&!await gAuth())return;
+    toast('☁️ 上傳中…');
+    save(true); // 先寫本地
+    const content=localStorage.getItem(SAVE_KEY);
+    gFileId=gFileId||await findCloudFile();
+    const meta={name:CLOUD_NAME,mimeType:'application/json'};
+    if(gFileId){
+      await fetch('https://www.googleapis.com/upload/drive/v3/files/'+gFileId+'?uploadType=multipart',{
+        method:'PATCH',
+        headers:{Authorization:'Bearer '+gToken},
+        body:multipartBody(meta,content)
+      });
+    }else{
+      const d=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+gToken},
+        body:multipartBody(meta,content)
+      }).then(r=>r.json());
+      gFileId=d.id;
+      localStorage.setItem('mc_gdrive_file',gFileId);
+    }
+    toast('☁️ 已存到 Google 雲端硬碟！','good');
+  }catch(e){toast('雲端存檔失敗：'+e.message,'bad');}
+};
+$('btn-cloud-load').onclick=async()=>{
+  try{
+    if(!gToken&&!await gAuth())return;
+    gFileId=gFileId||await findCloudFile();
+    if(!gFileId)return toast('雲端沒有存檔','bad');
+    const d=await gApi('GET','https://www.googleapis.com/drive/v3/files/'+gFileId+'?alt=media');
+    localStorage.setItem(SAVE_KEY,typeof d==='string'?d:JSON.stringify(d));
+    load();
+  }catch(e){toast('雲端載入失敗：'+e.message,'bad');}
+};
+$('btn-cloud-setup').onclick=async()=>{
+  const cur=getClientId();
+  const input=prompt('Google OAuth Client ID 設定\n\n1. console.cloud.google.com → 建立專案 → 啟用 Google Drive API\n2. 「憑證」→ 建立 OAuth 用戶端 ID（網頁應用程式）\n3. 已授權的 JavaScript 來源加入：file:// 或你的託管網址\n\n目前值：'+(cur||'(未設定)')+'\n\n輸入新的 Client ID（留空取消）：',cur||'');
+  if(input&&input.trim()){
+    localStorage.setItem('mc_gdrive_client',input.trim());
+    toast('Client ID 已儲存','good');
+  }
+};
+function multipartBody(meta,content){
+  const boundary='mc'+Date.now();
+  return '--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+
+    JSON.stringify(meta)+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+
+    content+'\r\n--'+boundary+'--';
+}
+
+$('btn-new').onclick=newCity;
+
+/* ================= 輸入 ================= */
+const ray=new THREE.Raycaster(), mouse=new THREE.Vector2(),
+      groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const hoverBox=new THREE.Mesh(new THREE.BoxGeometry(1,.06,1),
+  new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:.45}));
+hoverBox.visible=false; scene.add(hoverBox);
+const PAINTABLE=['road','zres','zcom','zind','bulldoze'];
+let btnDown=-1,lastX=0,lastY=0,painting=false,painted=new Set(),clickPending=false;
+const keys={};
+renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
+renderer.domElement.addEventListener('pointerdown',e=>{
+  lastX=e.clientX; lastY=e.clientY; btnDown=e.button;
+  if(e.button===0){
+    const cell=pickCell(e);
+    if(cell){
+      if(PAINTABLE.includes(tool)){painting=true;painted.clear();applyAt(cell.x,cell.y);}
+      else clickPending=true;
+    }
+  }
+});
+addEventListener('pointermove',e=>{
+  const cell=pickCell(e);
+  if(cell){hoverBox.visible=true;hoverBox.position.set(cell.x+.5,.03,cell.y+.5);}
+  else hoverBox.visible=false;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  if(btnDown===0&&painting&&cell){
+    const k=cell.x+','+cell.y;
+    if(!painted.has(k)){painted.add(k);applyAt(cell.x,cell.y);}
+  }else if(btnDown===2){
+    ctrl.sph.theta-=dx*.006;
+    ctrl.sph.phi=Math.max(.22,Math.min(1.5,ctrl.sph.phi-dy*.005));
+    lastX=e.clientX;lastY=e.clientY;
+  }else if(btnDown===1){
+    panCamera(-dx,-dy);
+    lastX=e.clientX;lastY=e.clientY;
+  }
+});
+addEventListener('pointerup',e=>{
+  if(btnDown===0&&clickPending&&Math.abs(e.clientX-lastX)<5&&Math.abs(e.clientY-lastY)<5){
+    const cell=pickCell(e);
+    if(cell)applyAt(cell.x,cell.y);
+  }
+  btnDown=-1;painting=false;clickPending=false;
+});
+renderer.domElement.addEventListener('wheel',e=>{
+  e.preventDefault();
+  ctrl.sph.radius=Math.max(7,Math.min(95,ctrl.sph.radius*(e.deltaY>0?1.12:.89)));
+},{passive:false});
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function pickCell(e){
+  mouse.x=(e.clientX/innerWidth)*2-1;
+  mouse.y=-(e.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mouse,camera);
+  const pt=new THREE.Vector3();
+  if(ray.ray.intersectPlane(groundPlane,pt)){
+    const x=Math.floor(pt.x),y=Math.floor(pt.z);
+    if(x>=0&&y>=0&&x<N&&y<N)return{x,y};
+  }
+  return null;
+}
+function applyAt(x,y){
+  if(tool==='bulldoze')removeCell(x,y);
+  else place(tool,x,y,T[tool].c);
+}
+function panCamera(dx,dy){
+  const sp=ctrl.sph.radius*.0016;
+  const fwd=new THREE.Vector3(); camera.getWorldDirection(fwd); fwd.y=0; fwd.normalize();
+  const right=new THREE.Vector3().crossVectors(fwd,new THREE.Vector3(0,1,0)).negate();
+  ctrl.target.addScaledVector(right,dx*sp).addScaledVector(fwd,dy*sp);
+  ctrl.target.x=Math.max(-8,Math.min(N+8,ctrl.target.x));
+  ctrl.target.z=Math.max(-8,Math.min(N+8,ctrl.target.z));
+}
+
+/* ================= 島嶼邊緣裝飾 ================= */
+(function decorateEdge(){
+  const sandMat=LM(0xd9c48f);
+  const treeSpots=[];
+  for(let i=0;i<N;i++){
+    treeSpots.push([i+.5,.7],[i+.5,N-.7],[.7,i+.5],[N-.7,i+.5]);
+  }
+  const mk=(w,d,x,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.52,d),sandMat);
+    m.position.set(x,-.24,z);m.receiveShadow=true;scene.add(m);};
+  mk(N+1.2,.6,N/2,-.3);mk(N+1.2,.6,N/2,N+.3);mk(.6,N,-.3,N/2);mk(.6,N,N+.3,N/2);
+  for(const [tx,tz] of treeSpots){
+    if(Math.random()<.55)continue;
+    const t=makeTree(rr(1.1,1.7));
+    t.position.set(tx+(Math.random()-.5)*.3,-.02,tz+(Math.random()-.5)*.3);
+    scene.add(t);
+  }
+})();
+
+/* ================= 主循環 ================= */
+const clock=new THREE.Clock();
+let simAcc=0;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),.1);
+  let px=0,pz=0;
+  if(keys['w']||keys['arrowup'])pz-=1;
+  if(keys['s']||keys['arrowdown'])pz+=1;
+  if(keys['a']||keys['arrowleft'])px-=1;
+  if(keys['d']||keys['arrowright'])px+=1;
+  if(px||pz)panCamera(px*40*dt,pz*40*dt);
+  camUpdate();
+  simAcc+=dt;
+  if(simAcc>=2){simAcc=0;simulate();tutUpdate();}
+  stepCars(dt);
+  stepConstructions(dt);
+  stepDayNight(dt);
+  const ft=clock.elapsedTime;
+  for(const e of FIRES){
+    e.f.scale.y=1+Math.sin(ft*14+e.x)*.22;
+    e.f.scale.x=e.f.scale.z=1+Math.sin(ft*11+e.y)*.12;
+  }
+  // 風車葉輪（繞機艙軸向 X 旋轉）
+  for(const s of SPIN){
+    if(s.userData.rotor)s.userData.rotor.rotation.x+=dt*2.2;
+  }
+  // 噴泉水珠：每顆沿拋物線循環（噴起→外落→回池心）
+  for(const f of FOUNTAINS){
+    if(f.userData.drops){
+      for(const d of f.userData.drops){
+        d.userData.t=(d.userData.t+dt*.7)%1;
+        const t=d.userData.t;
+        // t=0 在中心，t=1 落回外緣水面
+        const h=Math.sin(t*Math.PI)*.34;      // 高度拋物線
+        const rad=d.userData.r*t;             // 半徑線性外擴
+        d.position.set(Math.cos(d.userData.a)*rad,.14+h,Math.sin(d.userData.a)*rad);
+        d.scale.setScalar(1-t*.4);
+      }
+    }
+  }
+  // 電廠蒸汽
+  for(const s of STEAM){
+    s.position.y+=dt*.25;
+    s.material.opacity=.5*(1-(s.position.y-1.02)/1.2);
+    s.scale.multiplyScalar(1+dt*.3);
+    if(s.position.y>2.2){s.position.y=1.02;s.scale.set(1,1,1);}
+  }
+  // 雲
+  for(const cl of CLOUDS){
+    cl.position.x+=cl.userData.speed*dt;
+    if(cl.position.x>N+30)cl.position.x=-25;
+  }
+  renderer.render(scene,camera);
+}
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+/* ================= 主選單 ================= */
+const mainmenu=$('mainmenu');
+function startGame(){
+  mainmenu.style.transition='opacity .6s';
+  mainmenu.style.opacity='0';
+  setTimeout(()=>mainmenu.remove(),650);
+}
+$('mm-continue').onclick=()=>{
+  const has=!!localStorage.getItem(SAVE_KEY);
+  if(has)load(); else toast('找不到存檔，開始新城市','bad');
+  startGame();
+};
+$('mm-new').onclick=()=>{
+  localStorage.removeItem(SAVE_KEY);
+  startGame();
+};
+$('mm-help').onclick=()=>{
+  const box=$('mm-helpbox');
+  box.style.display=box.style.display==='none'?'block':'none';
+};
+
+updateUI();
+tutRender();
+animate();
+</script>
+</body>
+</html>
