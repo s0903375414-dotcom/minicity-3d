@@ -80,6 +80,16 @@
     稅率 <b id="taxval">9</b>%<br>
     <input type="range" id="tax" min="0" max="20" value="9">
     <button id="btn-music" style="width:100%;margin-top:5px;">🎵 音樂：開</button>
+    <button id="btn-myfiles" style="width:100%;margin-top:5px;">📁 選擇音樂檔</button>
+    <button id="btn-servermusic" style="width:100%;margin-top:5px;">📂 讀取 music 資料夾</button>
+    <div id="mylist-box" style="display:none;border:1px solid var(--line);border-radius:8px;padding:6px;margin-top:5px;font-size:11px;">
+      <div id="mylist-name" style="color:#9fb4d8;margin-bottom:3px;">—</div>
+      <div style="display:flex;gap:3px;">
+        <button id="my-prev" style="flex:1;padding:3px;">⏮</button>
+        <button id="my-playpause" style="flex:1;padding:3px;">⏸</button>
+        <button id="my-next" style="flex:1;padding:3px;">⏭</button>
+      </div>
+    </div>
     <button id="btn-save">💾 存檔</button>
     <button id="btn-load">📂 讀取</button>
     <button id="btn-cloud">☁️ 雲端存檔</button>
@@ -2414,6 +2424,88 @@ $('btn-music').onclick=()=>{
   const on=musicToggle();
   $('btn-music').textContent=on?'🎵 音樂：開':'🔇 音樂：關';
 };
+
+/* ================= 自己的音樂（資料夾選擇 + 拖放）=================
+   玩家選電腦裡的音樂資料夾（如「音樂」），或直接拖音檔進視窗。
+   播自己的音樂時程序化配樂自動靜音。 */
+const MYMUSIC={files:[],idx:0,audio:null,playing:false};
+function myAudio(){
+  if(!MYMUSIC.audio){
+    MYMUSIC.audio=new Audio();
+    MYMUSIC.audio.addEventListener('ended',()=>myNext(1));
+  }
+  return MYMUSIC.audio;
+}
+function myPlay(){
+  if(!MYMUSIC.files.length)return;
+  musicStop(); // 關掉程序化配樂
+  const a=myAudio();
+  a.src=MYMUSIC.files[MYMUSIC.idx];
+  a.loop=false;
+  a.play().catch(()=>{});
+  MYMUSIC.playing=true;
+  const name=decodeURIComponent(MYMUSIC.files[MYMUSIC.idx].split('/').pop());
+  $('mylist-name').textContent='🎵 '+(MYMUSIC.idx+1)+'/'+MYMUSIC.files.length+' '+name;
+  $('btn-music').textContent='🔇 音樂：關';
+}
+function myNext(step){
+  if(!MYMUSIC.files.length)return;
+  MYMUSIC.idx=(MYMUSIC.idx+step+MYMUSIC.files.length)%MYMUSIC.files.length;
+  if(MYMUSIC.playing||step!==0)myPlay();
+}
+$('btn-myfiles').onclick=()=>{
+  const inp=document.createElement('input');
+  inp.type='file';
+  inp.accept='audio/*';
+  inp.multiple=true;
+  inp.onchange=()=>{
+    const fs=[...inp.files].filter(f=>f.type.startsWith('audio/'));
+    if(!fs.length)return toast('沒有找到音檔','bad');
+    MYMUSIC.files=fs.map(f=>URL.createObjectURL(f));
+    MYMUSIC.idx=0;
+    $('mylist-box').style.display='block';
+    toast('已載入 '+fs.length+' 首音樂，開始播放 🎶','good');
+    myPlay();
+  };
+  inp.click();
+};
+/* 從伺服器 music/ 資料夾載入（本地伺服器模式）：
+   把 MP3 丟進遊戲資料夾的 music\ 裡，按此鈕即整批播放 */
+$('btn-servermusic').onclick=async()=>{
+  try{
+    const r=await fetch('/api/music');
+    const list=await r.json();
+    if(!list.length)return toast('music\\ 資料夾裡沒有音檔（支援 mp3/ogg/wav/m4a/flac）','bad');
+    MYMUSIC.files=list;
+    MYMUSIC.idx=0;
+    $('mylist-box').style.display='block';
+    toast('從 music\\ 資料夾載入 '+list.length+' 首，開始播放 🎶','good');
+    myPlay();
+  }catch(e){
+    toast('此功能需要本地伺服器（雙擊 啟動遊戲.bat）','bad');
+  }
+};
+$('my-prev').onclick=()=>myNext(-1);
+$('my-next').onclick=()=>myNext(1);
+$('my-playpause').onclick=()=>{
+  const a=myAudio();
+  if(!MYMUSIC.files.length)return;
+  if(MYMUSIC.playing){a.pause();MYMUSIC.playing=false;$('my-playpause').textContent='▶';}
+  else{a.play().catch(()=>{});MYMUSIC.playing=true;$('my-playpause').textContent='⏸';}
+};
+// 拖放音檔到視窗
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{
+  e.preventDefault();
+  const fs=[...(e.dataTransfer.files||[])].filter(f=>f.type.startsWith('audio/'));
+  if(!fs.length)return;
+  MYMUSIC.files=fs.map(f=>URL.createObjectURL(f));
+  MYMUSIC.idx=0;
+  $('mylist-box').style.display='block';
+  toast('收到 '+fs.length+' 首音樂，開始播放 🎶','good');
+  myPlay();
+});
+
 // 主選單音樂（需使用者互動後瀏覽器才允許聲音，首次點擊頁面即啟動）
 let menuMusicOn=false;
 mainmenu.addEventListener('click',()=>{

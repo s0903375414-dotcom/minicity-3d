@@ -18,6 +18,17 @@ const MIME = {
 
 const server = http.createServer((req, res) => {
   let urlPath = decodeURIComponent(req.url.split('?')[0]);
+  // 音樂清單 API：列出 music/ 資料夾裡的音檔
+  if (urlPath === '/api/music') {
+    const musicDir = path.join(ROOT, 'music');
+    fs.readdir(musicDir, (err, files) => {
+      if (err) { res.writeHead(200, {'Content-Type':'application/json'}); res.end('[]'); return; }
+      const audio = files.filter(f => /\.(mp3|ogg|wav|m4a|flac)$/i.test(f));
+      res.writeHead(200, {'Content-Type':'application/json; charset=utf-8'});
+      res.end(JSON.stringify(audio.map(f => '/music/' + encodeURIComponent(f))));
+    });
+    return;
+  }
   if (urlPath === '/') urlPath = '/minicity.html';
   const filePath = path.join(ROOT, urlPath);
   // 防目錄跳脫
