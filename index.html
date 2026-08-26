@@ -91,7 +91,10 @@
 🖱 右鍵拖曳＝旋轉 · 中鍵或 WASD＝平移 · 滾輪＝縮放<br>
 按 <b>R</b>＝拆除模式 · <b>Esc</b>＝收起選單<br><br>
 ① 鋪路 ② 蓋電廠水塔（沿路供應）③ 劃分區 ④ 建築自己長出來<br>
-⚠ 工業會失火，消防局覆蓋才安全 · 公園/廣場/體育場提升幸福
+⚠ 工業會失火！消防車會沿路趕來滅火<br>
+🚨 搶劫→警車出動 · 🤕 受傷→救護車出動<br>
+🔴 緊急車輛必須有「連通的道路」才能到現場<br>
+公園、廣場、體育場提升幸福
 </div>
 <div id="toasts"></div>
 
@@ -112,6 +115,9 @@
     <button id="mm-help" style="padding:12px;border-radius:12px;border:1px solid #3a4a66;
       background:#1a2230;color:#9fb4d8;font-size:13px;cursor:pointer;">
       ❓ 遊戲說明</button>
+    <button id="mm-changelog" style="padding:12px;border-radius:12px;border:1px solid #3a4a66;
+      background:#1a2230;color:#9fb4d8;font-size:13px;cursor:pointer;">
+      📜 更新日誌</button>
   </div>
   <div id="mm-helpbox" style="display:none;color:#cde;font-size:12.5px;line-height:1.8;max-width:340px;
     background:rgba(0,0,0,.35);padding:12px 16px;border-radius:10px;border:1px solid var(--line);">
@@ -123,6 +129,57 @@
     <b style="color:var(--gold)">操作：</b>左鍵建造/拖曳 · 右鍵旋轉 · 中鍵/WASD 平移 · 滾輪縮放
   </div>
   <div style="position:absolute;bottom:16px;color:#5a6a85;font-size:11px;">v3.0 — Three.js 城市模擬</div>
+</div>
+
+<!-- ===== 更新日誌（主選單可開啟）===== -->
+<div id="changelog" style="display:none;position:absolute;inset:0;z-index:110;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;">
+  <div style="background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    max-width:560px;max-height:80vh;overflow-y:auto;padding:22px 26px;color:#dfe8f4;">
+    <h1 style="margin:0 0 4px;font-size:24px;">📜 更新日誌 <span style="font-size:13px;color:#9fb4d8;">MiniCity 3D</span></h1>
+    <button id="cl-close" style="position:absolute;top:18px;right:22px;background:#2a3346;border:1px solid var(--line);
+      color:#fff;border-radius:8px;padding:4px 12px;cursor:pointer;">✕ 關閉</button>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.6 — 緊急派遣系統</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🚒 失火時消防車<b>沿道路尋路</b>趕赴現場，水柱粒子滅火特效</li>
+      <li>🚓 隨機搶劫事件，警車出動逮捕（幸福度+2）</li>
+      <li>🚑 隨機受傷事件，救護車出動救治</li>
+      <li>🔴 <b>道路必須連通</b>才能派遣！救不到會重扣幸福度</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.5 — 百種建築與車輛、災害系統</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🏬 新增 45 種建築：商店街／產業／地標／農業四大分類</li>
+      <li>🚗 車輛擴充至 13 種，隨人口解鎖（警車、救護車、油罐車…）</li>
+      <li>🌪️ 六種災害：地震、龍捲風、隕石、洪水、暴動、大停電</li>
+      <li>💰 商店類建築自帶營收，人口越多賺越多</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.0 — TheoTown 式 UI 大改版</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🗂 分類建造選單＋建築卡片面板</li>
+      <li>🌀 風力發電（旋轉葉輪）、🔆 太陽能電場、⛲ 噴泉、🏟 體育場</li>
+      <li>🏠 分區建築多變體系統，城市不再千篇一律</li>
+      <li>☁️ Google Drive 雲端存檔（OAuth 登入）</li>
+      <li>🏠 主選單：繼續遊戲／新城市／遊戲說明</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v2.x — 基礎建設期</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🏗 施工動畫：鷹架＋旋轉塔吊＋建築分段升起</li>
+      <li>🔥 火災蔓延、💧 水電管線供應網、😊 幸福度細算</li>
+      <li>🌗 晝夜循環（夜間窗光、車頭燈）、行駛車流、飄雲</li>
+      <li>📋 新手教學任務鏈（六步驟獎勵金）</li>
+      <li>🛣 自動道路造型：斑馬線路口、分道虛線、人行道</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v1.0 — 誕生</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🏙 3D 城市建造原型：道路、分區、建築升級、稅收財政</li>
+    </ul>
+  </div>
 </div>
 
 <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
@@ -167,6 +224,66 @@ const T={
   school:  {n:'學校',ico:'🏫',c:1100,u:90,d:'教育覆蓋，幸福 +'},
   stadium: {n:'體育場',ico:'🏟',c:5000,u:250,d:'大範圍幸福 ++'},
 };
+
+/* ================= 大擴充：45 種新建築（含變體共 100+ 種外觀）================= */
+const BDEFS=[
+ {k:'conv',n:'便利商店',ico:'🏪',c:180,u:4,d:'24小時營業',cat:'shop',pal:'#7ec8a9',sh:[.8,.26,.6],gf:1,awn:'#3a8a5a',inc:2},
+ {k:'super',n:'超市',ico:'🛒',c:320,u:6,d:'大量補貨，收入穩定',cat:'shop',pal:'#e0a24f',sh:[.9,.3,.72],gf:1,sign:'#7a4a1a',inc:3},
+ {k:'cafe',n:'咖啡廳',ico:'☕',c:220,u:4,d:'市民約會聖地',cat:'shop',pal:'#a9746a',sh:[.7,.26,.6],awn:'#6a4238',lamp:1,trees:1,inc:2},
+ {k:'rest',n:'餐廳',ico:'🍽️',c:260,u:5,d:'高級料理',cat:'shop',pal:'#c96a5a',sh:[.8,.28,.66],gf:1,awn:'#a83a2a',sign:'#5a1810',inc:3},
+ {k:'bake',n:'麵包店',ico:'🥐',c:210,u:4,d:'清晨香味四溢',cat:'shop',pal:'#e0b46a',sh:[.7,.24,.6],awn:'#d8883a',sign:'#7a4a10',inc:2},
+ {k:'book',n:'書店',ico:'📚',c:230,u:4,d:'安靜的知識空間',cat:'shop',pal:'#7a94b8',sh:[.76,.26,.6],gf:1,inc:2},
+ {k:'cloth',n:'服飾店',ico:'👗',c:240,u:4,d:'最新流行服飾',cat:'shop',pal:'#c78ab8',sh:[.76,.26,.6],gf:1,awn:'#c85a9a',inc:2},
+ {k:'elec',n:'電器行',ico:'🔌',c:280,u:5,d:'家電與3C產品',cat:'shop',pal:'#5aa8c8',sh:[.8,.3,.66],gf:1,sign:'#123a4a',inc:3},
+ {k:'pharma',n:'藥局',ico:'💊',c:250,u:4,d:'綠十字藥房',cat:'shop',pal:'#e8e8ee',sh:[.7,.26,.6],cross:1,awn:'#3a8a5a',inc:2},
+ {k:'salon',n:'理髮廳',ico:'✂️',c:200,u:3,d:'經典髮型沙龍',cat:'shop',pal:'#d8d8e0',sh:[.64,.24,.56],awn:'#d05a5a',lamp:1,inc:1},
+ {k:'gym',n:'健身房',ico:'🏋️',c:300,u:5,d:'練出好體態',cat:'shop',pal:'#8898a8',sh:[.86,.3,.7],sign:'#22323e',inc:2},
+ {k:'cine',n:'電影院',ico:'🎬',c:480,u:8,d:'首輪大片上映',cat:'shop',pal:'#4a4a58',sh:[.9,.34,.76],sign:'#1a1a2a',inc:5},
+ {k:'mall',n:'百貨商場',ico:'🏬',c:1200,u:20,d:'大型購物中心，高收入',cat:'shop',pal:'#c8a0d0',sh:[.92,.5,.8],gf:1,sign:'#4a2050',inc:12},
+ {k:'hotel',n:'飯店',ico:'🏨',c:900,u:15,d:'觀光客入住，高收入',cat:'shop',pal:'#8aa8c8',sh:[.7,.7,.66],sign:'#1a3050',inc:10},
+ {k:'bank',n:'銀行',ico:'🏦',c:700,u:10,d:'金錢流動的中心',cat:'shop',pal:'#cfc8b0',sh:[.86,.42,.7],sign:'#203a54',inc:8},
+ {k:'officeb',n:'辦公大樓',ico:'🏢',c:650,u:9,d:'白領階級聚集',cat:'shop',pal:'#9fb2c8',sh:[.68,.8,.62],sign:'#26374a',inc:8},
+ {k:'wshop',n:'小型工坊',ico:'🔧',c:200,u:3,d:'手工藝品製作',cat:'indu',pal:'#b09468',sh:[.7,.26,.6],chimney:1,inc:1},
+ {k:'ware',n:'倉庫',ico:'📦',c:350,u:4,d:'貨物集散地',cat:'indu',pal:'#a8a49a',sh:[.9,.3,.8],roof:'dome',roofCol:'#8a867e',inc:1},
+ {k:'refine',n:'煉油廠',ico:'🛢️',c:900,u:12,d:'重工業，高收入',cat:'indu',pal:'#b8b8c0',sh:[.8,.4,.7],chimney:1,tanks:1,inc:4},
+ {k:'recycle',n:'回收場',ico:'♻️',c:400,u:4,d:'資源永續利用',cat:'indu',pal:'#6aa87a',sh:[.86,.28,.7],tanks:1,inc:2},
+ {k:'brew',n:'釀造廠',ico:'🍺',c:450,u:5,d:'本地精釀啤酒',cat:'indu',pal:'#c8985a',sh:[.8,.32,.66],chimney:1,inc:3},
+ {k:'tech',n:'科技工廠',ico:'💻',c:800,u:8,d:'高科技製造業',cat:'indu',pal:'#8ac8e0',sh:[.86,.38,.7],sign:'#123a4a',inc:6},
+ {k:'sawmill',n:'木材廠',ico:'🪵',c:380,u:4,d:'木料加工',cat:'indu',pal:'#a87848',sh:[.86,.3,.7],chimney:1,inc:2},
+ {k:'temple',n:'寺廟',ico:'⛩️',c:600,u:6,d:'心靈寄託',cat:'land',pal:'#c84a3a',sh:[.8,.3,.7],roof:'sloped',roofCol:'#7a2820',trees:2,inc:3},
+ {k:'church',n:'教堂',ico:'⛪',c:550,u:6,d:'尖塔與鐘聲',cat:'land',pal:'#e0ddd4',sh:[.7,.5,.6],roof:'spire',roofCol:'#8898a8',inc:3},
+ {k:'clocktw',n:'鐘樓',ico:'🕰️',c:500,u:5,d:'城市的時間地標',cat:'land',pal:'#d8c8a0',sh:[.4,.8,.4],roof:'spire',roofCol:'#a88a5a',inc:2},
+ {k:'museum',n:'博物館',ico:'🏛️',c:800,u:8,d:'文化瑰寶收藏',cat:'land',pal:'#d8d0be',sh:[.9,.36,.7],trees:2,inc:6},
+ {k:'lib',n:'圖書館',ico:'📖',c:600,u:6,d:'知識的寶庫',cat:'land',pal:'#b89468',sh:[.86,.32,.7],trees:1,inc:4},
+ {k:'post',n:'郵局',ico:'📮',c:350,u:4,d:'信件包裹往來',cat:'land',pal:'#b8b0a8',sh:[.76,.28,.64],awn:'#c84a3a',inc:2},
+ {k:'court',n:'法院',ico:'⚖️',c:700,u:7,d:'正義的天平',cat:'land',pal:'#d0ccc0',sh:[.86,.4,.7],inc:3},
+ {k:'hall',n:'市政廳',ico:'🏛️',c:900,u:9,d:'城市的心臟',cat:'land',pal:'#c8beb0',sh:[.9,.44,.76],roof:'spire',roofCol:'#8a8274',inc:5},
+ {k:'obs',n:'天文台',ico:'🔭',c:750,u:7,d:'仰望星空',cat:'land',pal:'#aab4c0',sh:[.6,.3,.6],roof:'dome',roofCol:'#e8e8ee',inc:4},
+ {k:'amuse',n:'遊樂園',ico:'🎡',c:1100,u:15,d:'歡笑與尖叫，高收入',cat:'land',pal:'#e07890',sh:[.86,.3,.8],lamp:1,trees:1,inc:10},
+ {k:'pool',n:'游泳池',ico:'🏊',c:420,u:5,d:'夏日消暑勝地',cat:'land',pal:'#5ab8d0',sh:[.8,.14,.7],gf:1,inc:2},
+ {k:'tennis',n:'網球場',ico:'🎾',c:380,u:4,d:'運動好去處',cat:'land',pal:'#3f8f4f',sh:[.86,.1,.7],inc:1},
+ {k:'parking',n:'停車場',ico:'🅿️',c:300,u:2,d:'平面停車格',cat:'land',pal:'#9a9a9a',sh:[.9,.3,.9],inc:1},
+ {k:'gas',n:'加油站',ico:'⛽',c:380,u:3,d:'車輛加油服務',cat:'land',pal:'#d8d8dc',sh:[.8,.24,.6],awn:'#d05a3a',sign:'#8a2a10',inc:2},
+ {k:'lighthouse',n:'燈塔',ico:'🗼',c:520,u:5,d:'照亮海岸線',cat:'land',pal:'#e8e4da',sh:[.35,1,.35],roof:'lamp',inc:3},
+ {k:'monument',n:'紀念碑',ico:'🗿',c:450,u:3,d:'城市歷史象徵',cat:'land',pal:'#c8c4ba',sh:[.3,.9,.3],trees:2,inc:2},
+ {k:'farmhouse',n:'農舍',ico:'🏡',c:220,u:2,d:'田園生活',cat:'farm',pal:'#c87858',sh:[.6,.26,.55],roof:'sloped',roofCol:'#7a4a34',trees:1,inc:2},
+ {k:'barn',n:'穀倉',ico:'🛖',c:260,u:2,d:'存放收成',cat:'farm',pal:'#b8443a',sh:[.8,.34,.66],roof:'sloped',roofCol:'#7a2820',inc:2},
+ {k:'greenh',n:'溫室',ico:'🌱',c:300,u:3,d:'全年種植',cat:'farm',pal:'#9ad8b8',sh:[.8,.26,.6],gf:1,inc:2},
+ {k:'field',n:'農田',ico:'🌾',c:150,u:1,d:'稻浪搖曳',cat:'farm',pal:'#c8b060',sh:[.9,.06,.9],inc:2},
+ {k:'orchard',n:'果園',ico:'🍎',c:200,u:2,d:'果樹成蔭',cat:'farm',pal:'#7aa85a',sh:[.85,.08,.85],trees:4,inc:2},
+ {k:'windmill',n:'風車磨坊',ico:'🌬️',c:350,u:3,d:'古典風力動力',cat:'farm',pal:'#d8d0c0',sh:[.5,.6,.5],roof:'spire',roofCol:'#a89878',inc:2},
+];
+const BMAP={},BINC={};
+BDEFS.forEach(d=>{
+  BMAP[d.k]=d;
+  T[d.k]={n:d.n,ico:d.ico,c:d.c,u:d.u||0,d:d.d};
+  BINC[d.k]=d.inc||0;
+});
+(function(){
+  const cats=[['shop','🏬','商店'],['indu','🏗️','產業'],['land','🗼','地標'],['farm','🚜','農業']];
+  const bi=CATS.findIndex(c=>c.id==='bulldoze');
+  cats.forEach(([id,ico,nm])=>CATS.splice(bi++,0,{id,ico,nm,items:BDEFS.filter(d=>d.cat===id).map(d=>d.k)}));
+})();
 
 let money=30000, taxRate=9, tick=0, pop=0, jobs=0, happy=55;
 let lastNet=0, lastUpkeep=0, lastIncome=0;
@@ -272,6 +389,92 @@ function facadeMats(kind,level){
 function boxWithSides(w,h,d,fm){
   return shadowed(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
     [fm.sides[0],fm.sides[1],fm.plain,fm.plain,fm.sides[2],fm.sides[3]]));
+}
+
+/* ===== 大擴充建築：資料驅動通用工廠 ===== */
+function makeGenericBuilding(def){
+  const g=new THREE.Group();
+  const [w,h,d]=def.sh;
+  const body=shadowed(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshLambertMaterial({color:def.pal})));
+  body.position.y=h/2+.04; g.add(body);
+  // 窗戶條（依高度排幾層）
+  const rows=Math.max(1,Math.round(h/.22));
+  for(let r=0;r<rows;r++){
+    const win=new THREE.Mesh(new THREE.BoxGeometry(w*.82,.05,.015),LM(0x9fd4e8));
+    win.position.set(0,.12+r*((h-.1)/Math.max(1,rows-1)||0),(d/2)+.008);
+    g.add(win);
+    const win2=win.clone(); win2.position.z=-(d/2)-.008; win2.rotation.y=Math.PI; g.add(win2);
+  }
+  // 雨遮
+  if(def.awn){
+    const aw=new THREE.Mesh(new THREE.BoxGeometry(w*.6,.02,.12),LM(def.awn));
+    aw.position.set(0,.16,(d/2)+.06); aw.rotation.x=.4; g.add(aw);
+  }
+  // 招牌
+  if(def.sign){
+    const sg=new THREE.Mesh(new THREE.BoxGeometry(w*.5,.09,.03),LM(def.sign));
+    sg.position.set(0,h*.75,(d/2)+.02); g.add(sg);
+  }
+  // 店面玻璃
+  if(def.gf){
+    const glass=new THREE.Mesh(new THREE.BoxGeometry(w*.86,h*.35,.02),LM(0xbfe0ec));
+    glass.position.set(0,h*.2,(d/2)+.012); g.add(glass);
+  }
+  // 綠十字
+  if(def.cross){
+    const cm=new THREE.MeshBasicMaterial({color:0x2a9e4f});
+    const cv=new THREE.Mesh(new THREE.BoxGeometry(.05,.14,.01),cm);
+    cv.position.set(0,h*.8,(d/2)+.02); g.add(cv);
+    const cz=new THREE.Mesh(new THREE.BoxGeometry(.14,.05,.01),cm);
+    cz.position.set(0,h*.8,(d/2)+.02); g.add(cz);
+  }
+  // 理髮廳旋轉燈
+  if(def.lamp){
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.16,6),LM(0xe8e8ee));
+    pole.position.set(w*.3,.28,(d/2)+.04); g.add(pole);
+  }
+  // 屋頂類型
+  if(def.roof==='sloped'){
+    const roof=shadowed(new THREE.Mesh(new THREE.ConeGeometry(Math.max(w,d)*.62,.22,4),LM(def.roofCol||'#7a4034')));
+    roof.rotation.y=Math.PI/4; roof.position.y=h+.13; g.add(roof);
+  }else if(def.roof==='spire'){
+    const spire=new THREE.Mesh(new THREE.ConeGeometry(.1,h*.25,4),LM(def.roofCol||'#8898a8'));
+    spire.position.y=h+h*.125; g.add(spire);
+  }else if(def.roof==='dome'){
+    const dome=shadowed(new THREE.Mesh(new THREE.SphereGeometry(w*.45,10,7,0,Math.PI*2,0,Math.PI/2),LM(def.roofCol||'#c8c8cc')));
+    dome.position.y=h; g.add(dome);
+  }else if(def.roof==='lamp'){
+    // 燈塔頂部
+    const lampRoom=new THREE.Mesh(new THREE.BoxGeometry(.18,.12,.18),LM(0xffdf8a));
+    lampRoom.position.y=h+.08; g.add(lampRoom);
+    const cap=new THREE.Mesh(new THREE.ConeGeometry(.15,.12,8),LM('#b03a30'));
+    cap.position.y=h+.2; g.add(cap);
+  }else{
+    const rim=new THREE.Mesh(new THREE.BoxGeometry(w+.04,.04,d+.04),LM(0x55555e));
+    rim.position.y=h+.02; g.add(rim);
+  }
+  // 煙囪
+  if(def.chimney){
+    const ch=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,.3,8),LM(0x9a4436)));
+    ch.position.set(-w*.25,h+.17,-d*.2); g.add(ch);
+  }
+  // 儲槽
+  if(def.tanks){
+    for(const dx of [w*.25,-w*.05]){
+      const tk=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.24,10),LM(0xd0d4da));
+      tk.position.set(dx,h+.14,-d*.25); g.add(tk);
+    }
+  }
+  // 樹木裝飾
+  if(def.trees){
+    for(let i=0;i<def.trees;i++){
+      const t=makeTree(rr(.6,.9));
+      t.position.set(rr(-.36,.36),0,-d/2-.12);
+      g.add(t);
+    }
+  }
+  return g;
 }
 
 /* ===== 分區建築：多種變體 ===== */
@@ -823,6 +1026,7 @@ function makeMeshFor(type,x,y){
     case 'stadium':return makeStadium();
     case 'rubble':return makeRubble();
   }
+  if(BMAP[type])return makeGenericBuilding(BMAP[type]);
   return null;
 }
 
@@ -1108,8 +1312,13 @@ function simulate(){
   }
   for(let i=FIRES.length-1;i>=0;i--){
     const e=FIRES[i];
+    // 派遣消防車（每個火點只派一次，沿道路開過去）
+    if(!e.dispatched){
+      e.dispatched=true;
+      dispatch('fire',e.x,e.y,true);
+    }
     if(COV.firest[e.y*N+e.x]&&Math.random()<.8){
-      killFlame(e.c); toast('🚒 消防隊撲滅了火災！','good'); continue;
+      killFlame(e.c); toast('🚒 消防局覆蓋範圍內迅速撲滅！','good'); continue;
     }
     e.c.burn--;
     if(e.c.burn<=0){
@@ -1122,6 +1331,28 @@ function simulate(){
       const [dx,dy]=pick(DIRS);
       const n=cellAt(e.x+dx,e.y+dy);
       if(n&&ZONES.includes(n.type)&&n.dev&&n.burn===0)ignite(n,e.x+dx,e.y+dy);
+    }
+  }
+  /* 隨機治安/醫療事件：警車/救護車派遣 */
+  if(pop>20&&Math.random()<.12){
+    const p=randCell();
+    if(p){
+      const c=grid[p.y][p.x];
+      if(c&&ZONES.includes(c.type)&&c.dev&&!c.burn){
+        if(Math.random()<.5){
+          toast('🚨 發生搶劫事件！','bad');
+          if(!dispatch('police',p.x,p.y)){
+            happy=Math.max(5,happy-4); // 警察到不了，市民恐慌
+            toast('😱 無法可管，市民恐慌！','bad');
+          }
+        }else{
+          toast('🤕 有市民受傷需要救治！','bad');
+          if(!dispatch('medic',p.x,p.y)){
+            happy=Math.max(5,happy-3);
+            toast('😢 救護車到不了，傷患情況惡化','bad');
+          }
+        }
+      }
     }
   }
   let capacity=0,jc=0,ji=0;
@@ -1152,6 +1383,13 @@ function simulate(){
   demand.zcom=Math.max(0,Math.min(1,(ct-jc)/Math.max(8,pop*.25)));
   demand.zind=Math.max(0,Math.min(1,(it-ji)/Math.max(8,pop*.25)));
   lastIncome=Math.round((pop*.9+jc*1.3+ji*1.0)*(taxRate/9));
+  // 商店/地標/農業建築自帶營收（人口越多生意越好）
+  let bizInc=0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(c&&BINC[c.type])bizInc+=BINC[c.type]*(.5+Math.min(1,pop/300));
+  }
+  lastIncome+=Math.round(bizInc);
   lastUpkeep=0;
   for(let y=0;y<N;y++)for(let x=0;x<N;x++){
     const c=grid[y][x];
@@ -1164,9 +1402,246 @@ function simulate(){
   updateUI();
 }
 
-/* ================= 車流 ================= */
+/* ================= 車流：13 種車輛，隨人口解鎖 ================= */
 const CAR_COLORS=[0xd9483b,0x3b7dd9,0xe8b23a,0x49b675,0xdddddd,0x444444];
 const cars=[];
+function carBody(g,w,h,l,col,cabCol,extras){
+  const paint=LM(col);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,l),paint);
+  body.position.y=.05+h/2; body.castShadow=true; g.add(body);
+  if(cabCol!==null){
+    const cab=new THREE.Mesh(new THREE.BoxGeometry(w*.5,h*.55,l*.86),LM(cabCol||0x223344));
+    cab.position.set(-w*.12,.05+h*1.4,0); g.add(cab);
+  }
+  const wg=new THREE.CylinderGeometry(.032,.032,.028,8);
+  const wm=LM(0x1a1a1a);
+  for(const [wx,wz] of [[.3*w,-.34*l],[.3*w,.34*l],[-.3*w,-.34*l],[-.3*w,.34*l]]){
+    const w2=new THREE.Mesh(wg,wm);
+    w2.rotation.x=Math.PI/2; w2.position.set(wx,.033,wz);
+    g.add(w2);
+  }
+  if(extras)extras(g,w,h,l,paint);
+  return g;
+}
+const CAR_TYPES=[
+ {k:'sedan',n:'轎車',pop:0,   col:null,len:.3,w:.15,h:.08},
+ {k:'taxi', n:'計程車',pop:30, col:0xe8b23a,len:.3,w:.15,h:.08,
+  ex:(g)=>{const s=new THREE.Mesh(new THREE.BoxGeometry(.06,.03,.06),LM(0x222));s.position.set(0,.19,0);g.add(s);}},
+ {k:'bus',  n:'公車',pop:80,  col:0x3a7dd9,len:.42,w:.17,h:.13,cabCol:null,
+  ex:(g,w,h,l)=>{for(let i=-1;i<=1;i+=2){const win=new THREE.Mesh(new THREE.BoxGeometry(l*.8,.05,.01),LM(0xbfe0ec));win.position.set(0,.14,i*(l/2+.002));g.add(win);}}},
+ {k:'truck',n:'卡車',pop:120, col:0x556677,len:.4,w:.18,h:.1,
+  ex:(g,w,h,l)=>{const box=new THREE.Mesh(new THREE.BoxGeometry(.24,.11,.16),LM(0xd8d8dc));box.position.set(-.07,.16,0);g.add(box);}},
+ {k:'policec',n:'警車',pop:150,col:0x22304a,len:.3,w:.15,h:.08,
+  ex:(g)=>{const l1=new THREE.Mesh(new THREE.BoxGeometry(.05,.03,.04),
+   new THREE.MeshBasicMaterial({color:0xff3030}));l1.position.set(0,.19,-.04);g.add(l1);
+   const l2=new THREE.Mesh(new THREE.BoxGeometry(.05,.03,.04),
+   new THREE.MeshBasicMaterial({color:0x3080ff}));l2.position.set(0,.19,.04);g.add(l2);}},
+ {k:'ambu', n:'救護車',pop:180,col:0xf2f2f2,len:.36,w:.16,h:.11,
+  ex:(g,w,h,l)=>{const cross=new THREE.Mesh(new THREE.BoxGeometry(.08,.02,.02),
+   new THREE.MeshBasicMaterial({color:0xe83a3a}));cross.position.set(.1,.17,(l/2)+.001);g.add(cross);
+   const beacon=new THREE.Mesh(new THREE.BoxGeometry(.04,.03,.05),
+   new THREE.MeshBasicMaterial({color:0xff4040}));beacon.position.set(0,.19,0);g.add(beacon);}},
+ {k:'firetr',n:'消防車',pop:200,col:0xc0392b,len:.44,w:.18,h:.12,
+  ex:(g,w,h,l)=>{const lad=new THREE.Mesh(new THREE.BoxGeometry(.32,.02,.04),LM(0xd8d8dc));lad.position.set(-.02,.2,0);g.add(lad);
+   const beacon=new THREE.Mesh(new THREE.BoxGeometry(.05,.03,.06),
+   new THREE.MeshBasicMaterial({color:0xff2020}));beacon.position.set(.12,.2,0);g.add(beacon);}},
+ {k:'garbage',n:'垃圾車',pop:100,col:0x4a7a4a,len:.4,w:.17,h:.1,
+  ex:(g,w,h,l)=>{const bin=new THREE.Mesh(new THREE.BoxGeometry(.2,.09,.15),LM(0x3a6a3a));bin.position.set(-.06,.15,0);g.add(bin);}},
+ {k:'van',  n:'廂型車',pop:50, col:0xdddddd,len:.34,w:.16,h:.11,cabCol:null},
+ {k:'sport',n:'跑車',pop:250,col:0xd9483b,len:.3,w:.15,h:.06,
+  ex:(g)=>{const spoiler=new THREE.Mesh(new THREE.BoxGeometry(.04,.03,.14),LM(0x222222));spoiler.position.set(-.14,.13,0);g.add(spoiler);}},
+ {k:'tanker',n:'油罐車',pop:300,col:0x888888,len:.42,w:.18,h:.1,
+  ex:(g)=>{const tank=shadowed(new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.26,10),LM(0xc0c0c8)));
+   tank.rotation.x=Math.PI/2;tank.position.set(-.06,.16,0);g.add(tank);}},
+ {k:'tractor',n:'牽引機',pop:60,col:0x4a8a3a,len:.26,w:.15,h:.1,
+  ex:(g)=>{const cabF=new THREE.Mesh(new THREE.BoxGeometry(.1,.1,.14),LM(0x3a7a2e));cabF.position.set(.06,.16,0);g.add(cabF);
+   const stack=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.12,6),LM(0x333));stack.position.set(.02,.2,-.04);g.add(stack);}},
+ {k:'icecream',n:'冰淇淋車',pop:220,col:0xf8d8e8,len:.32,w:.16,h:.11,cabCol:null,
+  ex:(g,w,h,l)=>{const cone=new THREE.Mesh(new THREE.ConeGeometry(.04,.08,8),LM(0xe8b87a));cone.position.set(0,.22,0);g.add(cone);}},
+];
+function pickCarType(){
+  const avail=CAR_TYPES.filter(t=>t.pop<=pop);
+  // 加權：普通車常見
+  const weights={sedan:10,taxi:6,van:5,bus:3,truck:3,garbage:2,policec:2,ambu:1,firetr:1,sport:1,tanker:1,tractor:1,icecream:1};
+  const pool=[];
+  for(const t of avail){const w=weights[t.k]||1;for(let i=0;i<w;i++)pool.push(t);}
+  return pick(pool);
+}
+
+/* ================= 緊急派遣系統（道路尋路）=================
+   失火→消防車 · 搶劫→警車 · 受傷→救護車
+   車輛沿道路 BFS 尋路開到現場；沒有連通路網就派不出去！ */
+const EMERGENCY=[];
+const WATER_DROPS=[];
+function bfsRoadPath(sx,sy,tx,ty){
+  if(!isRoadAt(sx,sy))return null;
+  const targets=DIRS.map(([dx,dy])=>[tx+dx,ty+dy]).filter(([x,y])=>isRoadAt(x,y));
+  if(!targets.length)return null; // 目標建築旁沒有路
+  const prev=new Map(),seen=new Set([sx+','+sy]),q=[[sx,sy]];
+  while(q.length){
+    const [x,y]=q.shift();
+    if(targets.some(([a,b])=>a===x&&b===y)){
+      const path=[];let k=x+','+y;
+      while(k){const p=k.split(',').map(Number);path.unshift(p);k=prev.get(k);}
+      return path;
+    }
+    for(const [dx,dy] of DIRS){
+      const nx=x+dx,ny=y+dy,k=nx+','+ny;
+      if(isRoadAt(nx,ny)&&!seen.has(k)){seen.add(k);prev.set(k,x+','+y);q.push([nx,ny]);}
+    }
+  }
+  return null;
+}
+function nearestService(type,tx,ty){
+  let best=null,bd=1e9;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(c&&c.type===type){
+      const d=Math.abs(x-tx)+Math.abs(y-ty);
+      if(d<bd){bd=d;best=[x,y];}
+    }
+  }
+  return best;
+}
+function makeEmergencyMesh(kind){
+  const g=new THREE.Group();
+  g.userData.beacons=[];
+  if(kind==='fire'){
+    carBody(g,.18,.12,.44,0xc0392b,null,(g2,w,h,l)=>{
+      const lad=new THREE.Mesh(new THREE.BoxGeometry(.34,.02,.05),LM(0xd8d8dc));
+      lad.position.set(-.02,.21,0); g2.add(lad);
+      addBeacon(g2,0,.24,-.04,0xff2020);
+      addBeacon(g2,0,.24,.04,0xff8020);
+      // 水管捲
+      const hose=new THREE.Mesh(new THREE.TorusGeometry(.04,.015,6,10),LM(0x3a5a8a));
+      hose.position.set(.14,.13,0); hose.rotation.y=Math.PI/2; g2.add(hose);
+    });
+  }else if(kind==='police'){
+    carBody(g,.16,.09,.32,0x22304a,null,(g2)=>{
+      addBeacon(g2,0,.19,-.045,0xff3030);
+      addBeacon(g2,0,.19,.045,0x3080ff);
+      const stripe=new THREE.Mesh(new THREE.BoxGeometry(.17,.03,.02),LM(0xffffff));
+      stripe.position.set(0,.09,.085); g2.add(stripe);
+    });
+  }else{
+    carBody(g,.17,.11,.36,0xf2f2f2,null,(g2,w,h,l)=>{
+      const cm=new THREE.MeshBasicMaterial({color:0xe83a3a});
+      const cv=new THREE.Mesh(new THREE.BoxGeometry(.02,.06,.01),cm);
+      cv.position.set(.09,.14,l/2+.003); g2.add(cv);
+      const cz=new THREE.Mesh(new THREE.BoxGeometry(.06,.02,.01),cm);
+      cz.position.set(.09,.14,l/2+.003); g2.add(cz);
+      addBeacon(g2,0,.2,0,0xff4040);
+    });
+  }
+  return g;
+}
+function addBeacon(g,x,y,z,col){
+  const b=new THREE.Mesh(new THREE.BoxGeometry(.045,.03,.045),
+    new THREE.MeshBasicMaterial({color:col}));
+  b.position.set(x,y,z);
+  b.userData.baseCol=col;
+  g.add(b); g.userData.beacons.push(b);
+}
+function dispatch(kind,tx,ty,silentToast){
+  const svcMap={fire:'firest',police:'police',medic:'hospital'};
+  const st=nearestService(svcMap[kind],tx,ty);
+  if(!st){
+    if(!silentToast)toast('⚠ 城市裡沒有'+({fire:'消防局',police:'警察局',medic:'醫院'})[kind]+'！','bad');
+    return false;
+  }
+  const path=bfsRoadPath(st[0],st[1],tx,ty);
+  if(!path||path.length<1){
+    if(!silentToast)toast('🚨 道路沒有連通，緊急車輛到不了現場！','bad');
+    return false;
+  }
+  const m=makeEmergencyMesh(kind);
+  m.position.set(path[0][0]+.5,.05,path[0][1]+.5);
+  CITY.add(m);
+  EMERGENCY.push({m,path,idx:0,t:0,kind,tx,ty,state:'go',workT:0,
+    drops:[],targetCell:grid[ty]&&grid[ty][tx]});
+  if(!silentToast)toast({fire:'🚒 消防車出動！',police:'🚓 警車趕赴現場！',medic:'🚑 救護車出動！'}[kind],'good');
+  return true;
+}
+function stepEmergencies(dt){
+  const SPEED=2.6; // 緊急車輛比一般車快
+  for(let i=EMERGENCY.length-1;i>=0;i--){
+    const e=EMERGENCY[i];
+    // 警燈閃爍
+    e.m.userData.beacons.forEach((b,j)=>{
+      const on=Math.floor(clock.elapsedTime*6+j)%2===0;
+      b.material.color.setHex(on?b.userData.baseCol:0x333333);
+    });
+    if(e.state==='go'){
+      e.t+=dt*SPEED;
+      while(e.t>=1&&e.idx<e.path.length-1){
+        e.t-=1;e.idx++;
+      }
+      if(e.idx>=e.path.length-1&&e.t>=1){
+        e.state='work';e.workT=0;
+        // 面向目標建築
+        e.m.rotation.y=Math.atan2(-(e.ty+.5-e.m.position.z),(e.tx+.5-e.m.position.x))-Math.PI/2;
+        continue;
+      }
+      const [cx,cy]=e.path[e.idx],[nx,ny]=e.path[Math.min(e.idx+1,e.path.length-1)];
+      const tt=e.idx<e.path.length-1?e.t:1;
+      e.m.position.set(cx+.5+(nx-cx)*tt,.05,cy+.5+(ny-cy)*tt);
+      e.m.rotation.y=Math.atan2(-(ny-cy),nx-cx);
+    }else{
+      e.workT+=dt;
+      if(e.kind==='fire'){
+        // 水柱噴向火焰
+        if(Math.random()<.6){
+          const drop=new THREE.Mesh(new THREE.SphereGeometry(.02,5,4),
+            new THREE.MeshLambertMaterial({color:0x7ac8e8,transparent:true,opacity:.9}));
+          const start=e.m.position.clone(); start.y=.25;
+          const end=new THREE.Vector3(e.tx+.5,.3,e.ty+.5);
+          drop.userData={start,end,t:0};
+          scene.add(drop); WATER_DROPS.push(drop);
+          e.drops.push(drop);
+        }
+        const c=e.targetCell;
+        if(c&&c.burn>0&&(c.burn>4||e.workT>2.5)){
+          killFlame(c);
+          toast('💧 火勢撲滅了！','good');
+          finishEmergency(e,i);continue;
+        }
+        if(e.workT>6){finishEmergency(e,i);continue;} // 火已自己滅或燒完
+      }else if(e.kind==='police'){
+        if(e.workT>2){
+          toast('🚓 搶劫犯已被逮捕！','good');
+          happy=Math.min(100,happy+2);
+          finishEmergency(e,i);continue;
+        }
+      }else{ // medic
+        if(e.workT>2.5){
+          toast('🚑 傷患已送醫救治！','good');
+          finishEmergency(e,i);continue;
+        }
+      }
+    }
+  }
+  // 水滴動畫
+  for(let i=WATER_DROPS.length-1;i>=0;i--){
+    const d=WATER_DROPS[i];
+    d.userData.t+=dt*1.8;
+    const t=d.userData.t;
+    if(t>=1){scene.remove(d);WATER_DROPS.splice(i,1);continue;}
+    d.position.lerpVectors(d.userData.start,d.userData.end,t);
+    d.position.y+=Math.sin(t*Math.PI)*.15;
+  }
+}
+function finishEmergency(e,i){
+  CITY.remove(e.m);
+  EMERGENCY.splice(i,1);
+}
+
+function buildCarMesh(t){
+  const g=new THREE.Group();
+  return carBody(g,t.w,t.h,t.len,
+    t.col!==null?(t.col===null?pick(CAR_COLORS):(typeof t.col==='number'?t.col:pick(CAR_COLORS))):pick(CAR_COLORS),
+    t.cabCol===undefined?0x223344:t.cabCol,
+    t.ex);
+}
 function spawnCar(){
   const roads=[];
   for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(grid[y][x]&&grid[y][x].type==='road')roads.push([x,y]);
@@ -1175,26 +1650,8 @@ function spawnCar(){
   const opts=DIRS.filter(([dx,dy])=>isRoadAt(x+dx,y+dy));
   if(!opts.length)return;
   const [dx,dy]=pick(opts);
-  const g=new THREE.Group();
-  const paint=LM(pick(CAR_COLORS));
-  const body=new THREE.Mesh(new THREE.BoxGeometry(.3,.08,.15),paint);
-  body.position.y=.07; body.castShadow=true; g.add(body);
-  const cab=new THREE.Mesh(new THREE.BoxGeometry(.16,.06,.14),LM(0x223344));
-  cab.position.set(-.02,.13,0); g.add(cab);
-  const hl=new THREE.Mesh(new THREE.BoxGeometry(.02,.03,.12),
-    new THREE.MeshBasicMaterial({color:0xfff2b0}));
-  hl.position.set(.155,.07,0); g.add(hl);
-  const tl=new THREE.Mesh(new THREE.BoxGeometry(.02,.025,.12),
-    new THREE.MeshBasicMaterial({color:0xff3020}));
-  tl.position.set(-.155,.07,0); g.add(tl);
-  const wg=new THREE.CylinderGeometry(.035,.035,.03,8);
-  const wm=LM(0x1a1a1a);
-  for(const [wx,wz] of [[.09,.08],[.09,-.08],[-.09,.08],[-.09,-.08]]){
-    const w=new THREE.Mesh(wg,wm);
-    w.rotation.x=Math.PI/2;
-    w.position.set(wx,.035,wz);
-    g.add(w);
-  }
+  const t=pickCarType();
+  const g=buildCarMesh(t);
   g.position.set(x+.5,.05,y+.5);
   CITY.add(g);
   cars.push({m:g,x,y,dx,dy,t:0});
@@ -1534,6 +1991,166 @@ function multipartBody(meta,content){
     content+'\r\n--'+boundary+'--';
 }
 
+/* ================= 災害系統 ================= */
+const DISASTERS={
+  quake:  {n:'地震',ico:'🌐',cost:800},
+  tornado:{n:'龍捲風',ico:'🌪️',cost:1000},
+  meteor: {n:'隕石',ico:'☄️',cost:1500},
+  flood:  {n:'洪水',ico:'🌊',cost:1200},
+  riot:   {n:'暴動',ico:'😤',cost:600},
+  blackout:{n:'大停電',ico:'🔌',cost:500},
+};
+let disasterActive=null, disasterTimer=0;
+// UI 按鈕
+const disPanel=document.createElement('div');
+disPanel.className='panel';
+disPanel.style.cssText='top:10px;left:170px;padding:6px;display:flex;gap:4px;';
+disPanel.innerHTML='<span style="font-size:11px;color:#9fb4d8;align-self:center;margin-right:2px;">災害</span>';
+document.body.appendChild(disPanel);
+for(const [k,d] of Object.entries(DISASTERS)){
+  const b=document.createElement('div');
+  b.className='btn'; b.style.minWidth='40px'; b.style.padding='4px 6px';
+  b.innerHTML=d.ico+'<small>$'+d.cost+'</small>';
+  b.title=d.n;
+  b.onclick=()=>triggerDisaster(k);
+  disPanel.appendChild(b);
+}
+function randCell(){
+  for(let i=0;i<50;i++){
+    const x=Math.floor(Math.random()*N),y=Math.floor(Math.random()*N);
+    if(grid[y][x])return{x,y};
+  }
+  return null;
+}
+function destroyAt(x,y,silent){
+  const c=cellAt(x,y);
+  if(!c||c.type==='road')return;
+  killFlame(c);
+  const ci=CONSTRUCTIONS.findIndex(co=>co.g===c.mesh);
+  if(ci>=0){CITY.remove(CONSTRUCTIONS[ci].crane);CONSTRUCTIONS.splice(ci,1);}
+  swapMesh(c,x,y,makeRubble());
+  c.type='rubble'; c.dev=false; c.level=1;
+}
+function triggerDisaster(kind){
+  const d=DISASTERS[kind];
+  if(money<d.cost)return fail('錢不夠！需要 $'+d.cost);
+  if(disasterActive)return fail('災害進行中！');
+  money-=d.cost;
+  disasterActive=kind; disasterTimer=0;
+  toast(d.ico+' '+d.n+'來襲！','bad');
+  if(kind==='quake'){
+    // 全城搖晃 + 隨機建築受損
+    shakeT=3;
+    setTimeout(()=>{ for(let i=0;i<8;i++){const p=randCell();if(p)destroyAt(p.x,p.y);} },1200);
+    setTimeout(()=>{disasterActive=null;},3000);
+  }else if(kind==='tornado'){
+    spawnTornado();
+  }else if(kind==='meteor'){
+    spawnMeteor();
+  }else if(kind==='flood'){
+    spawnFlood();
+  }else if(kind==='riot'){
+    // 幸福度暴跌 + 隨機建築起火
+    happy=Math.max(5,happy-30);
+    for(let i=0;i<5;i++){const p=randCell();if(p){const c=grid[p.y][p.x];if(c&&ZONES.includes(c.type))ignite(c,p.x,p.y);}}
+    setTimeout(()=>{disasterActive=null;},2000);
+  }else if(kind==='blackout'){
+    SHORT.p=true;
+    toast('⚡ 全城大停電！幸福度下滑','bad');
+    let lost=0;
+    const iv=setInterval(()=>{
+      lost++;
+      happy=Math.max(5,happy-2); updateUI();
+      if(lost>=10){clearInterval(iv);}
+    },600);
+    setTimeout(()=>{disasterActive=null;},6500);
+  }
+}
+/* --- 龍捲風 --- */
+let TORNADO=null,shakeT=0;
+function spawnTornado(){
+  const g=new THREE.Group();
+  for(let i=0;i<7;i++){
+    const r=.15+i*.09;
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(r,.05,6,16),
+      new THREE.MeshLambertMaterial({color:0xb8c0cc,transparent:true,opacity:.75}));
+    ring.rotation.x=Math.PI/2; ring.position.y=.25+i*.22; g.add(ring);
+  }
+  g.position.set(rr(8,N-8),0,rr(8,N-8));
+  scene.add(g);
+  TORNADO={g,t:14}; // 存活14秒
+}
+function stepTornado(dt){
+  if(!TORNADO)return;
+  TORNADO.t-=dt;
+  const g=TORNADO.g;
+  g.position.x+=dt*2.2; g.position.z+=Math.sin(clock.elapsedTime*2)*dt*1.5;
+  if(g.position.x>N+5)g.position.x=-5;
+  g.rotation.y+=dt*4;
+  // 吸毀路徑上的建築
+  const cx=Math.floor(g.position.x),cy=Math.floor(g.position.z);
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    if(Math.random()<.06)destroyAt(cx+dx,cy+dy,true);
+  }
+  if(TORNADO.t<=0){scene.remove(g);TORNADO=null;disasterActive=null;}
+}
+/* --- 隕石 --- */
+let METEOR=null;
+function spawnMeteor(){
+  const target=randCell()||{x:20,y:20};
+  const g=new THREE.Group();
+  const rock=shadowed(new THREE.Mesh(new THREE.DodecahedronGeometry(.28),LM(0x6a4a38)));
+  g.add(rock);
+  const trail=new THREE.Mesh(new THREE.ConeGeometry(.12,.7,8),
+    new THREE.MeshBasicMaterial({color:0xff7a1e,transparent:true,opacity:.7}));
+  trail.rotation.x=Math.PI/2; trail.position.y=.5; g.add(trail);
+  g.position.set(target.x+18,26,target.y+18);
+  scene.add(g);
+  METEOR={g,target,t:0};
+}
+function stepMeteor(dt){
+  if(!METEOR)return;
+  METEOR.t+=dt;
+  const {g,target}=METEOR;
+  const dir=new THREE.Vector3(target.x+.5-g.position.x,-g.position.y,target.y+.5-g.position.z);
+  const dist=dir.length();
+  if(dist>.5){
+    dir.normalize();
+    g.position.addScaledVector(dir,dt*16);
+    g.rotation.x+=dt*5; g.rotation.z+=dt*3;
+  }else{
+    // 撞擊！
+    shakeT=1.2;
+    const cx=target.x,cy=target.y;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)destroyAt(cx+dx,cy+dy,true);
+    // 火圈
+    const fire=new THREE.Mesh(new THREE.RingGeometry(.2,.9,20),
+      new THREE.MeshBasicMaterial({color:0xff5a1e,transparent:true,opacity:.85,side:THREE.DoubleSide}));
+    fire.rotation.x=-Math.PI/2; fire.position.set(cx+.5,.08,cy+.5);
+    scene.add(fire);
+    setTimeout(()=>scene.remove(fire),900);
+    scene.remove(g); METEOR=null; disasterActive=null;
+  }
+}
+/* --- 洪水 --- */
+let FLOOD=null;
+function spawnFlood(){
+  const water=new THREE.Mesh(new THREE.PlaneGeometry(N,N),
+    new THREE.MeshLambertMaterial({color:0x3a7a9a,transparent:true,opacity:.55}));
+  water.rotation.x=-Math.PI/2; water.position.set(N/2,.02,N/2);
+  scene.add(water);
+  FLOOD={water,t:10};
+}
+function stepFlood(dt){
+  if(!FLOOD)return;
+  FLOOD.t-=dt;
+  FLOOD.water.position.y=.02+Math.sin(clock.elapsedTime*2)*.03;
+  if(FLOOD.t<7&&FLOOD.t>6.5){ // 水退時低窪建築小概率被沖走
+    for(let i=0;i<3;i++){const p=randCell();if(p&&Math.random()<.3)destroyAt(p.x,p.y,true);}
+  }
+  if(FLOOD.t<=0){scene.remove(FLOOD.water);FLOOD=null;disasterActive=null;}
+}
+
 $('btn-new').onclick=newCity;
 
 /* ================= 輸入 ================= */
@@ -1641,10 +2258,20 @@ function animate(){
   if(keys['d']||keys['arrowright'])px+=1;
   if(px||pz)panCamera(px*40*dt,pz*40*dt);
   camUpdate();
+  // 災害螢幕震動
+  if(shakeT>0){
+    shakeT-=dt;
+    camera.position.x+=Math.sin(clock.elapsedTime*70)*.12*shakeT;
+    camera.position.y+=Math.sin(clock.elapsedTime*55)*.1*shakeT;
+  }
   simAcc+=dt;
   if(simAcc>=2){simAcc=0;simulate();tutUpdate();}
   stepCars(dt);
+  stepEmergencies(dt);
   stepConstructions(dt);
+  stepTornado(dt);
+  stepMeteor(dt);
+  stepFlood(dt);
   stepDayNight(dt);
   const ft=clock.elapsedTime;
   for(const e of FIRES){
@@ -1708,6 +2335,12 @@ $('mm-help').onclick=()=>{
   const box=$('mm-helpbox');
   box.style.display=box.style.display==='none'?'block':'none';
 };
+$('mm-changelog').onclick=()=>{
+  $('changelog').style.display='flex';
+};
+document.addEventListener('click',e=>{
+  if(e.target.id==='cl-close')$('changelog').style.display='none';
+});
 
 updateUI();
 tutRender();
