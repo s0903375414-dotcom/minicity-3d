@@ -79,6 +79,7 @@
   <div id="right-body" style="padding:0 12px 10px;font-size:13px;line-height:1.6;display:none;">
     稅率 <b id="taxval">9</b>%<br>
     <input type="range" id="tax" min="0" max="20" value="9">
+    <button id="btn-music" style="width:100%;margin-top:5px;">🎵 音樂：開</button>
     <button id="btn-save">💾 存檔</button>
     <button id="btn-load">📂 讀取</button>
     <button id="btn-cloud">☁️ 雲端存檔</button>
@@ -1691,20 +1692,26 @@ function stepCars(dt){
 /* ================= 晝夜 ================= */
 let dayT=DAY_LEN*.3;
 function stepDayNight(dt){
-  dayT=(dayT+dt)%DAY_LEN;
-  const ang=dayT/DAY_LEN*Math.PI*2-Math.PI/2;
-  const sh=Math.sin(ang);
-  const day=Math.max(0,Math.min(1,sh*2+.25));
-  sun.intensity=day*1.15;
+  // 晝夜循環 = 3 × DAY_LEN = 12 分鐘（清晨→白天→夜晚各 4 分鐘）
+  const CYCLE=DAY_LEN*3;
+  dayT=(dayT+dt)%CYCLE;
+  // 前 2/3 是白天（清晨+日間），後 1/3 是夜晚
+  const phase=dayT/CYCLE; // 0~1
+  const sh=Math.sin(phase*Math.PI*2-Math.PI/2);
+  const day=phase<.66?Math.max(0,Math.min(1,Math.sin(phase/.66*Math.PI)*1.3)):.0;
+  sun.intensity=.15+day*1.0;
   amb.intensity=.12+day*.3;
-  sun.position.set(ctrl.target.x+Math.cos(ang)*70,Math.max(6,sh*80+10),ctrl.target.z+30);
+  sun.position.set(ctrl.target.x+Math.cos(phase*Math.PI*2)*70,
+    Math.max(6,day*80+10),ctrl.target.z+30);
   sun.target.position.copy(ctrl.target);
   const sky=SKY_NIGHT.clone().lerp(SKY_DAY,day);
-  if(Math.abs(sh)<.18)sky.lerp(SKY_SET,.45*(1-Math.abs(sh)/.18));
+  if(phase>.6&&phase<.72)sky.lerp(SKY_SET,.5); // 黃昏過渡
   scene.background.copy(sky);
   scene.fog.color.copy(sky);
   const night=1-day;
   for(const m of GLOW)m.emissiveIntensity=night*1.1;
+  // 音樂隨晝夜切換（白天曲 ↔ 夜晚曲）
+  if(MUSIC.playing)musicSwitch(day>.3?'day':'night');
 }
 
 /* ================= UI ================= */
@@ -2320,12 +2327,105 @@ addEventListener('resize',()=>{
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
 });
+/* ================= 音樂系統（Web Audio 程序化生成，無需音檔）=================
+   三種氛圍：主選單（寧靜琶音）、白天（明亮大調）、夜晚（低沉小調）
+   晝夜循環 = DAY_LEN(240s) x 3 = 12 分鐘一整天 */
+const MUSIC={ctx:null,gain:null,playing:null,timer:null,current:'menu'};
+function musicInit(){
+  if(MUSIC.ctx)return;
+  const C=window.AudioContext||window.webkitAudioContext;
+  if(!C)return;
+  MUSIC.ctx=new C();
+  MUSIC.gain=MUSIC.ctx.createGain();
+  MUSIC.gain.gain.value=.18;
+  MUSIC.gain.connect(MUSIC.ctx.destination);
+}
+// 單音：正弦+泛音，帶 attack/release 柔化
+function tone(freq,dur,vol,type,delay){
+  if(!MUSIC.ctx)return;
+  const t0=MUSIC.ctx.currentTime+(delay||0);
+  const osc=MUSIC.ctx.createOscillator();
+  const g=MUSIC.ctx.createGain();
+  osc.type=type||'sine';
+  osc.frequency.value=freq;
+  g.gain.setValueAtTime(0,t0);
+  g.gain.linearRampToValueAtTime(vol,t0+.04);
+  g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+  osc.connect(g); g.connect(MUSIC.gain);
+  osc.start(t0); osc.stop(t0+dur+.05);
+}
+const NOTE={C:261.63,D:293.66,E:329.63,F:349.23,G:392,A:440,B:493.88,
+            C3:130.81,D3:146.83,E3:164.81,F3:174.61,G3:196,A3:220,B3:246.88,
+            C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880};
+// 樂句庫（每句=音名陣列）
+const PHRASES={
+  menu:[['C','E','G','B','A','G','E','D'],['C','F','A','C5','B','A','F','E'],
+        ['A3','C','E','G','F','E','C','A3'],['D','F','A','C5','A','G','F','D']],
+  day:  [['C','D','E','G','A','G','E','C'],['E','F','G','C5','G','F','E','D'],
+        ['F','G','A','C5','D5','C5','A','G'],['G','A','B','C5','A','G','E','C']],
+  night:[['C','D#','G','A#','G','D#','C','A3'],['A3','C','D#','G','F','D#','C','A3'],
+        ['D','F','G#','C5','G#','F','D','D3'],['C','D#','F','G','D#','C','B3','C']],
+};
+let phraseIdx=0;
+function playPhrase(){
+  const list=PHRASES[MUSIC.current]||PHRASES.menu;
+  const ph=list[phraseIdx%list.length];
+  phraseIdx++;
+  const beat=1.1; // 每音 1.1 秒
+  ph.forEach((n,i)=>{
+    const f=NOTE[n]||330;
+    tone(f,beat*1.4,.5,'sine',i*beat);          // 主旋律
+    if(i%4===0)tone(f/2,beat*3,.22,'triangle',i*beat); // 低音襯底
+    if(MUSIC.current!=='night'&&i%2===0)tone(f*2,beat,.1,'sine',i*beat+.02); // 白天泛音
+  });
+  MUSIC.timer=setTimeout(playPhrase,ph.length*beat*1000);
+}
+function musicSwitch(mode){
+  if(MUSIC.current===mode&&MUSIC.playing)return;
+  clearTimeout(MUSIC.timer);
+  MUSIC.current=mode;
+  phraseIdx=0;
+  if(MUSIC.playing){playPhrase();}
+}
+function musicStart(){
+  musicInit();
+  if(!MUSIC.ctx)return;
+  if(MUSIC.ctx.state==='suspended')MUSIC.ctx.resume();
+  if(MUSIC.playing)return;
+  MUSIC.playing=true;
+  playPhrase();
+}
+function musicStop(){
+  clearTimeout(MUSIC.timer);
+  MUSIC.playing=false;
+}
+// 音量控制
+function musicToggle(){
+  musicInit();
+  if(!MUSIC.ctx)return false;
+  if(!MUSIC.playing){musicStart();return true;}
+  MUSIC.gain.gain.value=MUSIC.gain.gain.value>0?0:.18;
+  return MUSIC.gain.gain.value>0;
+}
 /* ================= 主選單 ================= */
 const mainmenu=$('mainmenu');
+// 音樂開關
+$('btn-music').onclick=()=>{
+  const on=musicToggle();
+  $('btn-music').textContent=on?'🎵 音樂：開':'🔇 音樂：關';
+};
+// 主選單音樂（需使用者互動後瀏覽器才允許聲音，首次點擊頁面即啟動）
+let menuMusicOn=false;
+mainmenu.addEventListener('click',()=>{
+  if(!menuMusicOn){menuMusicOn=true;MUSIC.current='menu';musicStart();}
+},{once:false});
+
 function startGame(){
   mainmenu.style.transition='opacity .6s';
   mainmenu.style.opacity='0';
   setTimeout(()=>mainmenu.remove(),650);
+  MUSIC.current='day';
+  musicStart();
 }
 // 設定面板收合
 $('right-toggle').onclick=()=>{
