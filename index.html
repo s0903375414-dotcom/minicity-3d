@@ -111,16 +111,16 @@
     🏙 MiniCity <span style="color:var(--gold)">3D</span></div>
   <div style="color:#9fb4d8;font-size:14px;margin-top:-10px;">城市建造模擬 — 建設你的夢想城市</div>
   <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;width:240px;">
-    <button id="mm-continue" style="padding:12px;border-radius:12px;border:1px solid #4a6a9a;
+    <button id="mm-continue" onclick="window._mmContinue&&window._mmContinue()" style="padding:12px;border-radius:12px;border:1px solid #4a6a9a;
       background:linear-gradient(135deg,#2d5aa8,#3d8bfd);color:#fff;font-size:16px;cursor:pointer;">
       ▶ 繼續遊戲</button>
-    <button id="mm-new" style="padding:12px;border-radius:12px;border:1px solid #4a6a9a;
+    <button id="mm-new" onclick="window._mmNew&&window._mmNew()" style="padding:12px;border-radius:12px;border:1px solid #4a6a9a;
       background:#232c3e;color:#fff;font-size:16px;cursor:pointer;">
       🆕 新的城市</button>
-    <button id="mm-help" style="padding:12px;border-radius:12px;border:1px solid #3a4a66;
+    <button id="mm-help" onclick="window._mmHelp&&window._mmHelp()" style="padding:12px;border-radius:12px;border:1px solid #3a4a66;
       background:#1a2230;color:#9fb4d8;font-size:13px;cursor:pointer;">
       ❓ 遊戲說明</button>
-    <button id="mm-changelog" style="padding:12px;border-radius:12px;border:1px solid #3a4a66;
+    <button id="mm-changelog" onclick="window._mmChangelog&&window._mmChangelog()" style="padding:12px;border-radius:12px;border:1px solid #3a4a66;
       background:#1a2230;color:#9fb4d8;font-size:13px;cursor:pointer;">
       📜 更新日誌</button>
   </div>
@@ -286,7 +286,7 @@ BDEFS.forEach(d=>{
 });
 (function(){
   const cats=[['shop','🏬','商店'],['indu','🏗️','產業'],['land','🗼','地標'],['farm','🚜','農業']];
-  const bi=CATS.findIndex(c=>c.id==='bulldoze');
+  let bi=CATS.findIndex(c=>c.id==='bulldoze');
   cats.forEach(([id,ico,nm])=>CATS.splice(bi++,0,{id,ico,nm,items:BDEFS.filter(d=>d.cat===id).map(d=>d.k)}));
 })();
 
@@ -2352,9 +2352,17 @@ $('mm-help').onclick=()=>{
 $('mm-changelog').onclick=()=>{
   $('changelog').style.display='flex';
 };
-document.addEventListener('click',e=>{
-  if(e.target.id==='cl-close')$('changelog').style.display='none';
+// 更新日誌彈窗：點關閉鈕或背景關閉，並阻止點擊穿透
+$('changelog').addEventListener('click',e=>{
+  if(e.target.id==='cl-close'||e.target.id==='changelog'){
+    $('changelog').style.display='none';
+  }
 });
+// 暴露給 inline onclick（防止 script 順序問題）
+window._mmContinue=()=>{const has=!!localStorage.getItem(SAVE_KEY);if(has)load();else toast('找不到存檔，開始新城市','bad');startGame();};
+window._mmNew=()=>{localStorage.removeItem(SAVE_KEY);startGame();};
+window._mmHelp=()=>{const box=$('mm-helpbox');box.style.display=box.style.display==='none'?'block':'none';};
+window._mmChangelog=()=>{$('changelog').style.display='flex';};
 
 updateUI();
 tutRender();

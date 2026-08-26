@@ -1,0 +1,12 @@
+{
+  "name": "minicity-3d",
+  "version": "3.7.0",
+  "description": "MiniCity 3D - 城市建造模擬遊戲 (Three.js)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -3,7 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8477;
+const PORT = process.env.PORT || 8477; // Render/雲端平台會注入 PORT
 const ROOT = __dirname;
 
 const MIME = {
