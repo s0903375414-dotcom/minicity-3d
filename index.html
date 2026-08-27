@@ -211,7 +211,7 @@ const ZONES=['zres','zcom','zind'];
 const POWER_CAP={power:100,wind:40,solar:30};
 const ZONE_COL={zres:0x4fc94f,zcom:0x4f9fe0,zind:0xe0c04f};
 const RES_POP=[0,8,16,28,44,64], JOB_COM=[0,6,12,20,32,48], JOB_IND=[0,8,16,26,40,58];
-const DAY_LEN=240;
+const DAY_LEN=720;
 
 /* ===== 建造分類（TheoTown 風格）===== */
 const CATS=[
@@ -225,21 +225,21 @@ const CATS=[
 const T={
   bulldoze:{n:'拆除',ico:'🚧',c:5,d:'移除建築或道路'},
   road:    {n:'道路',ico:'🛣',c:15,d:'城市血管，沿路供應水電'},
-  zres:    {n:'住宅區',ico:'🏠',c:25,d:'市民居住，需要水電'},
-  zcom:    {n:'商業區',ico:'🏢',c:30,d:'商店與辦公，提供就業'},
-  zind:    {n:'工業區',ico:'🏭',c:30,d:'工廠，工作多但污染'},
+  zres:    {n:'住宅區',ico:'🏠',c:20,d:'市民居住，需要水電'},
+  zcom:    {n:'商業區',ico:'🏢',c:25,d:'商店與辦公，提供就業'},
+  zind:    {n:'工業區',ico:'🏭',c:25,d:'工廠，工作多但污染'},
   park:    {n:'公園',ico:'🌳',c:90,u:2,d:'幸福 +，淨化污染'},
   fountain:{n:'噴泉廣場',ico:'⛲',c:150,u:3,d:'幸福 +，美化市容'},
   plaza:   {n:'市民廣場',ico:'🏛',c:260,u:5,d:'幸福 ++，集會空間'},
-  power:   {n:'火力電廠',ico:'⚡',c:1200,u:80,d:'供電 100，沿路輸送'},
-  wind:    {n:'風力發電',ico:'🌀',c:2000,u:50,d:'供電 40，零污染'},
-  solar:   {n:'太陽能電場',ico:'🔆',c:2500,u:30,d:'供電 30，零污染'},
-  water:   {n:'水塔',ico:'💧',c:600,u:30,d:'供水 70，沿路輸送'},
+  power:   {n:'火力電廠',ico:'⚡',c:1200,u:40,d:'供電 100，沿路輸送'},
+  wind:    {n:'風力發電',ico:'🌀',c:2000,u:20,d:'供電 40，零污染'},
+  solar:   {n:'太陽能電場',ico:'🔆',c:2500,u:15,d:'供電 30，零污染'},
+  water:   {n:'水塔',ico:'💧',c:600,u:15,d:'供水 70，沿路輸送'},
   police:  {n:'警察局',ico:'🚓',c:900,u:60,d:'治安覆蓋，幸福 +'},
   firest:  {n:'消防局',ico:'🚒',c:900,u:60,d:'覆蓋內火災自動撲滅'},
-  hospital:{n:'醫院',ico:'🏥',c:1500,u:120,d:'健康覆蓋，幸福 +'},
-  school:  {n:'學校',ico:'🏫',c:1100,u:90,d:'教育覆蓋，幸福 +'},
-  stadium: {n:'體育場',ico:'🏟',c:5000,u:250,d:'大範圍幸福 ++'},
+  hospital:{n:'醫院',ico:'🏥',c:1500,u:60,d:'健康覆蓋，幸福 +'},
+  school:  {n:'學校',ico:'🏫',c:1100,u:45,d:'教育覆蓋，幸福 +'},
+  stadium: {n:'體育場',ico:'🏟',c:5000,u:120,d:'大範圍幸福 ++'},
 };
 
 /* ================= 大擴充：45 種新建築（含變體共 100+ 種外觀）================= */
@@ -302,7 +302,7 @@ BDEFS.forEach(d=>{
   cats.forEach(([id,ico,nm])=>CATS.splice(bi++,0,{id,ico,nm,items:BDEFS.filter(d=>d.cat===id).map(d=>d.k)}));
 })();
 
-let money=30000, taxRate=9, tick=0, pop=0, jobs=0, happy=55;
+let money=50000, taxRate=9, tick=0, pop=0, jobs=0, happy=55;
 let lastNet=0, lastUpkeep=0, lastIncome=0;
 let demand={zres:.45,zcom:.15,zind:.15};
 const SHORT={p:false,w:false};
@@ -1484,7 +1484,7 @@ function simulate(){
   const ct=pop*.35, it=pop*.45;
   demand.zcom=Math.max(0,Math.min(1,(ct-jc)/Math.max(8,pop*.25)));
   demand.zind=Math.max(0,Math.min(1,(it-ji)/Math.max(8,pop*.25)));
-  lastIncome=Math.round((pop*.9+jc*1.3+ji*1.0)*(taxRate/9));
+  lastIncome=Math.round((pop*1.2+jc*1.6+ji*1.3)*(taxRate/9));
   // 商店/地標/農業建築自帶營收（人口越多生意越好）
   let bizInc=0;
   for(let y=0;y<N;y++)for(let x=0;x<N;x++){
