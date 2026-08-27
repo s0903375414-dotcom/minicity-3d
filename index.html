@@ -85,6 +85,7 @@
     <button id="btn-cloud">☁️ 雲端存檔</button>
     <button id="btn-cloud-load">⬇️ 雲端載入</button>
     <button id="btn-cloud-setup">🔑 Google 設定</button>
+    <button id="btn-sandbox" style="width:100%;margin-top:8px;background:#4a7a4a;">🏖️ 沙盒模式</button>
     <button id="btn-new">♻️ 重新開始</button>
     <button id="btn-mainmenu" style="width:100%;margin-top:8px;background:#a84;">🏠 返回主選單</button>
   </div>
@@ -1210,13 +1211,13 @@ function stepConstructions(dt){
 let tool='road';
 let buildRotate=0;  // 建築旋轉方向：0=北,1=東,2=南,3=西
 function place(type,x,y,cost){
-  if(money<cost)return fail('錢不夠！需要 $'+cost);
+  if(!sandboxMode && money<cost)return fail('錢不夠！需要 $'+cost);
   if(cellAt(x,y))return fail('這格已被佔用');
   const mesh=makeMeshFor(type,x,y);
   if(buildRotate)mesh.rotation.y=buildRotate*Math.PI/2;
   startConstruction(x,y,type,mesh);
   grid[y][x]={type,mesh,dev:false,level:1,supplied:{p:false,w:false},burn:0,rot:buildRotate};
-  money-=cost;
+  if(!sandboxMode)money-=cost;
   refreshRoadsAround(x,y);
   return true;
 }
@@ -1224,8 +1225,8 @@ function removeCell(x,y){
   const c=cellAt(x,y);
   if(!c)return fail('這格是空的');
   if(c.burn>0)return fail('火災中無法拆除！');
-  if(money<T.bulldoze.c)return fail('錢不夠！');
-  money-=T.bulldoze.c;
+  if(!sandboxMode && money<T.bulldoze.c)return fail('錢不夠！');
+  if(!sandboxMode)money-=T.bulldoze.c;
   killFlame(c);
   const ci=CONSTRUCTIONS.findIndex(co=>co.g===c.mesh);
   if(ci>=0){CITY.remove(CONSTRUCTIONS[ci].crane);CONSTRUCTIONS.splice(ci,1);}
@@ -1426,73 +1427,86 @@ function simulate(){
   tick++;
   floodUtil('p'); floodUtil('w');
   computeOverlays();
-  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
-    const c=grid[y][x];
-    if(!c||!ZONES.includes(c.type)||c.burn>0)continue;
-    const req=DIRS.some(([dx,dy])=>isRoadAt(x+dx,y+dy))&&c.supplied.p&&!SHORT.p&&c.supplied.w&&!SHORT.w;
-    if(!c.dev){
-      if(req&&demand[c.type]>.12&&Math.random()<.12*Math.min(1,demand[c.type]+.2)){
-        c.dev=true; c.level=1;
-        swapMesh(c,x,y,startConstruction(x,y,c.type,buildBuildingMesh(c.type,1,x,y)));
-      }
-    }else{
-      if(!req){
-        if(Math.random()<.05){
-          c.level--;
-          if(c.level<1){c.dev=false;swapMesh(c,x,y,makeMeshFor(c.type,x,y));}
-          else swapMesh(c,x,y,buildBuildingMesh(c.type,c.level,x,y));
+  // 沙盒模式：跳過自然發展、災害、維護費
+  if(!sandboxMode){
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+      const c=grid[y][x];
+      if(!c||!ZONES.includes(c.type)||c.burn>0)continue;
+      const req=DIRS.some(([dx,dy])=>isRoadAt(x+dx,y+dy))&&c.supplied.p&&!SHORT.p&&c.supplied.w&&!SHORT.w;
+      if(!c.dev){
+        if(req&&demand[c.type]>.12&&Math.random()<.12*Math.min(1,demand[c.type]+.2)){
+          c.dev=true; c.level=1;
+          swapMesh(c,x,y,startConstruction(x,y,c.type,buildBuildingMesh(c.type,1,x,y)));
         }
-      }else if(demand[c.type]>.25&&c.level<5&&Math.random()<.04){
-        c.level++;
-        swapMesh(c,x,y,startConstruction(x,y,c.type,buildBuildingMesh(c.type,c.level,x,y)));
+      }else{
+        if(!req){
+          if(Math.random()<.05){
+            c.level--;
+            if(c.level<1){c.dev=false;swapMesh(c,x,y,makeMeshFor(c.type,x,y));}
+            else swapMesh(c,x,y,buildBuildingMesh(c.type,c.level,x,y));
+          }
+        }else if(demand[c.type]>.25&&c.level<5&&Math.random()<.04){
+          c.level++;
+          swapMesh(c,x,y,startConstruction(x,y,c.type,buildBuildingMesh(c.type,c.level,x,y)));
+        }
+        if((c.type==='zind'||c.type==='zcom')&&Math.random()<.0016)ignite(c,x,y);
       }
-      if((c.type==='zind'||c.type==='zcom')&&Math.random()<.0016)ignite(c,x,y);
     }
-  }
-  for(let i=FIRES.length-1;i>=0;i--){
-    const e=FIRES[i];
-    // 派遣消防車（每個火點只派一次，沿道路開過去）
-    if(!e.dispatched){
-      e.dispatched=true;
-      dispatch('fire',e.x,e.y,true);
+    for(let i=FIRES.length-1;i>=0;i--){
+      const e=FIRES[i];
+      // 派遣消防車（每個火點只派一次，沿道路開過去）
+      if(!e.dispatched){
+        e.dispatched=true;
+        dispatch('fire',e.x,e.y,true);
+      }
+      if(COV.firest[e.y*N+e.x]&&Math.random()<.8){
+        killFlame(e.c); toast('🚒 消防局覆蓋範圍內迅速撲滅！','good'); continue;
+      }
+      e.c.burn--;
+      if(e.c.burn<=0){
+        killFlame(e.c);
+        swapMesh(e.c,e.x,e.y,makeRubble());
+        e.c.type='rubble'; e.c.dev=false; toast('🏚 建築物已燒毀成廢墟','bad');
+        continue;
+      }
+      if(Math.random()<.1){
+        const [dx,dy]=pick(DIRS);
+        const n=cellAt(e.x+dx,e.y+dy);
+        if(n&&ZONES.includes(n.type)&&n.dev&&n.burn===0)ignite(n,e.x+dx,e.y+dy);
+      }
     }
-    if(COV.firest[e.y*N+e.x]&&Math.random()<.8){
-      killFlame(e.c); toast('🚒 消防局覆蓋範圍內迅速撲滅！','good'); continue;
+    /* 隨機治安/醫療事件：警車/救護車派遣 */
+    if(pop>20&&Math.random()<.12){
+      const p=randCell();
+      if(p){
+        const c=grid[p.y][p.x];
+        if(c&&ZONES.includes(c.type)&&c.dev&&!c.burn){
+          if(Math.random()<.5){
+            toast('🚨 發生搶劫事件！','bad');
+            spawnIncidentEffect(p.x,p.y,'robbery');
+            if(!dispatch('police',p.x,p.y)){
+              happy=Math.max(5,happy-4); // 警察到不了，市民恐慌
+              toast('😱 無法可管，市民恐慌！','bad');
+            }
+          }else{
+            toast('🤕 有市民受傷需要救治！','bad');
+            spawnIncidentEffect(p.x,p.y,'injury');
+            if(!dispatch('medic',p.x,p.y)){
+              happy=Math.max(5,happy-3);
+              toast('😢 救護車到不了，傷患情況惡化','bad');
+            }
+          }
+        }
+      }
     }
-    e.c.burn--;
-    if(e.c.burn<=0){
+  }else{
+    // 沙盒模式：自動滅火、自動解決事件
+    for(let i=FIRES.length-1;i>=0;i--){
+      const e=FIRES[i];
       killFlame(e.c);
-      swapMesh(e.c,e.x,e.y,makeRubble());
-      e.c.type='rubble'; e.c.dev=false; toast('🏚 建築物已燒毀成廢墟','bad');
-      continue;
-    }
-    if(Math.random()<.1){
-      const [dx,dy]=pick(DIRS);
-      const n=cellAt(e.x+dx,e.y+dy);
-      if(n&&ZONES.includes(n.type)&&n.dev&&n.burn===0)ignite(n,e.x+dx,e.y+dy);
-    }
-  }
-  /* 隨機治安/醫療事件：警車/救護車派遣 */
-  if(pop>20&&Math.random()<.12){
-    const p=randCell();
-    if(p){
-      const c=grid[p.y][p.x];
-      if(c&&ZONES.includes(c.type)&&c.dev&&!c.burn){
-        if(Math.random()<.5){
-          toast('🚨 發生搶劫事件！','bad');
-          spawnIncidentEffect(p.x,p.y,'robbery');
-          if(!dispatch('police',p.x,p.y)){
-            happy=Math.max(5,happy-4); // 警察到不了，市民恐慌
-            toast('😱 無法可管，市民恐慌！','bad');
-          }
-        }else{
-          toast('🤕 有市民受傷需要救治！','bad');
-          spawnIncidentEffect(p.x,p.y,'injury');
-          if(!dispatch('medic',p.x,p.y)){
-            happy=Math.max(5,happy-3);
-            toast('😢 救護車到不了，傷患情況惡化','bad');
-          }
-        }
+      if(e.c.type==='rubble'){
+        e.c.type=e.c._origType||'zres'; e.c.dev=true; e.c.level=Math.max(1,e.c.level);
+        swapMesh(e.c,e.x,e.y,buildBuildingMesh(e.c.type,e.c.level,e.x,e.y));
       }
     }
   }
@@ -1531,14 +1545,16 @@ function simulate(){
     if(c&&BINC[c.type])bizInc+=BINC[c.type]*(.5+Math.min(1,pop/300));
   }
   lastIncome+=Math.round(bizInc);
-  lastUpkeep=0;
-  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
-    const c=grid[y][x];
-    if(c&&T[c.type]&&T[c.type].u)lastUpkeep+=T[c.type].u;
+  let lastUpkeep=0;
+  if(!sandboxMode){
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+      const c=grid[y][x];
+      if(c&&T[c.type]&&T[c.type].u)lastUpkeep+=T[c.type].u;
+    }
   }
   lastNet=lastIncome-lastUpkeep;
   money+=lastNet;
-  if(money<-2000){money=-2000;toast('破產了！降低支出或提高稅收','bad');}
+  if(!sandboxMode && money<-2000){money=-2000;toast('破產了！降低支出或提高稅收','bad');}
   if(tick%15===0)save(true);
   updateUI();
 }
@@ -2237,11 +2253,13 @@ function toggleCat(id,el){
   buildpanel.innerHTML='';
   for(const key of cat.items){
     const t=T[key];
+    const cost = sandboxMode ? 0 : t.c;
+    const upkeep = sandboxMode ? 0 : (t.u||0);
     const card=document.createElement('div');
     card.className='bcard'+(tool===key?' sel':'');
     card.innerHTML='<div class="ico">'+t.ico+'</div><div class="nm">'+t.n+'</div>'+
-      '<div class="cost">$'+t.c+'</div>'+
-      (t.u?'<div class="up">維護 $'+t.u+'/月</div>':'')+
+      '<div class="cost">$'+cost+'</div>'+
+      (upkeep?'<div class="up">維護 $'+upkeep+'/月</div>':'')+
       '<div class="desc">'+t.d+'</div>';
     card.onclick=()=>{
       tool=key;
@@ -2873,8 +2891,8 @@ function animate(){
             }
           }
         }
-        // 事件持續時間結束後移除
-        if(inc.timer>8){
+        // 事件持續時間結束後移除（5 分鐘 = 300 秒）
+        if(inc.timer>300){
           CITY.remove(inc.mesh);
           INCIDENTS.splice(i,1);
         }
@@ -2982,6 +3000,24 @@ $('btn-music').onclick=()=>{
     $('btn-music').textContent=autoMusicMuted?'🔇 音樂：靜音':'🎵 音樂：開';
   }else{
     toast('目前沒有自動播放的音樂','ok');
+  }
+};
+
+// 沙盒模式狀態
+let sandboxMode=false;
+$('btn-sandbox').onclick=()=>{
+  sandboxMode=!sandboxMode;
+  const btn=$('btn-sandbox');
+  if(sandboxMode){
+    btn.textContent='🏖️ 沙盒模式：開';
+    btn.style.background='#27ae60';
+    money=999999999;
+    $('money').textContent=money.toLocaleString();
+    toast('沙盒模式開啟：無限金錢、無災害、全解鎖、免維護','ok');
+  }else{
+    btn.textContent='🏖️ 沙盒模式';
+    btn.style.background='#4a7a4a';
+    toast('沙盒模式關閉','ok');
   }
 };
 
