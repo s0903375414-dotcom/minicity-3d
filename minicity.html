@@ -1952,8 +1952,11 @@ function stepDayNight(dt){
   const night=1-day;
   for(const m of GLOW)m.emissiveIntensity=night*1.1;
   // 晝夜循環：音樂隨場景切換（menu / day / night）
-  if(!menuMusicOn){menuMusicOn=true;loadMusicAuto('menu');}
-  if(!gameMusicLoading){
+  // 只有在遊戲中（主選單已移除）才切換 day/night 音樂
+  const inMainMenu = document.getElementById('mainmenu') !== null;
+  if(inMainMenu){
+    if(!menuMusicOn){menuMusicOn=true;loadMusicAuto('menu');}
+  }else if(!gameMusicLoading){
     if(day>.3)loadMusicAuto('day');
     else loadMusicAuto('night');
   }
@@ -2964,9 +2967,10 @@ async function loadMusicAuto(cat){
 mainmenu.addEventListener('click',()=>{
   if(!menuMusicOn){menuMusicOn=true;loadMusicAuto('menu');}
 },{once:false});
-// 任何點擊都嘗試啟動音樂（保險）
+// 任何點擊都嘗試啟動音樂（保險）— 只有在主選單顯示時才嘗試播放 menu 音樂
 document.addEventListener('click',()=>{
-  if(!menuMusicOn){menuMusicOn=true;loadMusicAuto('menu');}
+  const inMainMenu = document.getElementById('mainmenu') !== null;
+  if(inMainMenu && !menuMusicOn){menuMusicOn=true;loadMusicAuto('menu');}
 },{once:true});
 
 // 音樂開關：控制自動分類音樂

@@ -1,9 +1,17 @@
 {
   "menu": [
-    "music/menu/A%20Joyful%20Moment.mp3"
+    "music/menu/We%20are%20condemned%20to%20be%20free(cn).mp3"
   ],
   "day": [
-    "music/day/Jumping%20Thoughts.mp3"
+    "music/day/A%20Joyful%20Moment.mp3",
+    "music/day/Battle%20of%20the%20Demon%20King.mp3",
+    "music/day/Jumping%20Thoughts.mp3",
+    "music/day/Time%20for%20Small%20Talk.mp3"
   ],
-  "night": []
+  "night": [
+    "music/night/Just%20You.mp3",
+    "music/night/May%20This%20Moment%20Last%20Forever.mp3",
+    "music/night/The%20Cozy%20Room.mp3",
+    "music/night/Waterdrop.mp3"
+  ]
 }
