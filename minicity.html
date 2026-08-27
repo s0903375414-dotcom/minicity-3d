@@ -3155,7 +3155,9 @@ let autoMusicPlaying=false;
 let autoMusicCategory=null;
 let gameMusicLoading=false; // 防止重複載入
 async function loadMusicAuto(cat){
+  // 發起切換時即更新 category，避免競態（day→night 切換時 stepDayNight 可能重入）
   if(cat===autoMusicCategory && autoMusicPlaying)return; // 已在播放同類
+  autoMusicCategory=cat; // 先標記目標類別
   try{
     gameMusicLoading=true;
     let list=null;
@@ -3171,7 +3173,7 @@ async function loadMusicAuto(cat){
     }
     if(!list||!list.length){
       toast(cat+' 資料夾沒有音檔，靜音 🎵','ok');
-      autoMusicAudio=null; autoMusicPlaying=false; autoMusicCategory=cat;
+      autoMusicAudio=null; autoMusicPlaying=false;
       gameMusicLoading=false;
       return;
     }
@@ -3183,7 +3185,6 @@ async function loadMusicAuto(cat){
     autoMusicAudio.volume=0.3;
     await autoMusicAudio.play().catch(()=>{});
     autoMusicPlaying=true;
-    autoMusicCategory=cat;
     toast('🎵 自動播放 '+cat+' 音樂：'+decodeURIComponent(url.split('/').pop()),'good');
   }catch(e){
     toast('自動播放失敗：'+e.message,'bad');
