@@ -126,6 +126,7 @@
     <button id="mm-new" onclick="window._mmNew&&window._mmNew()" style="padding:12px;border-radius:12px;border:1px solid #4a6a9a;
       background:#232c3e;color:#fff;font-size:16px;cursor:pointer;">
       🆕 新的城市</button>
+    <div id="mm-login-wrap" style="margin-top:6px;"></div>
     <button id="mm-help" onclick="window._mmHelp&&window._mmHelp()" style="padding:12px;border-radius:12px;border:1px solid #3a4a66;
       background:#1a2230;color:#9fb4d8;font-size:13px;cursor:pointer;">
       ❓ 遊戲說明</button>
@@ -3273,6 +3274,30 @@ window._mmContinue=()=>{const has=!!localStorage.getItem(SAVE_KEY);if(has)load()
 window._mmNew=()=>{localStorage.removeItem(SAVE_KEY);startGame();};
 window._mmHelp=()=>{const box=$('mm-helpbox');box.style.display=box.style.display==='none'?'block':'none';};
 window._mmChangelog=()=>{$('changelog').style.display='flex';};
+
+// 主選單 Google 登入按鈕
+function renderMainMenuLogin(){
+  const wrap=$('mm-login-wrap');
+  if(!wrap)return;
+  const cid=GOOGLE_CLIENT_ID||localStorage.getItem('mc_gdrive_client');
+  if(!cid||!window.google?.accounts?.id){wrap.innerHTML='';return;}
+  wrap.innerHTML='<div id="g_id_onload" data-client_id="'+cid+'" data-callback="handleMainMenuCredential" data-auto_select="false" data-cancel_on_tap_outside="true"></div><div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left"></div>';
+  google.accounts.id.initialize({client_id:cid,callback:handleMainMenuCredential});
+  google.accounts.id.renderButton(wrap.querySelector('.g_id_signin'),{type:'standard',size:'large',theme:'outline',text:'signin_with',shape:'rectangular',logo_alignment:'left'});
+}
+window.handleMainMenuCredential=async(resp)=>{
+  if(!resp.credential)return;
+  gToken=null; gUser=null;
+  try{
+    const r=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+resp.credential}});
+    const info=await r.json();
+    gToken=resp.credential; gUser=info;
+    updateAccountUI();
+    toast('已登入：'+(gUser.name||'Google 用戶'),'good');
+    renderMainMenuLogin();
+  }catch(e){toast('登入失敗','bad');}
+};
+renderMainMenuLogin();
 
 // 返回主選單
 function backToMainMenu(){
