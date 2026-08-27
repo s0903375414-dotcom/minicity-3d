@@ -2469,20 +2469,31 @@ $('btn-myfiles').onclick=()=>{
   };
   inp.click();
 };
-/* 從伺服器 music/ 資料夾載入（本地伺服器模式）：
-   把 MP3 丟進遊戲資料夾的 music\ 裡，按此鈕即整批播放 */
+/* 從伺服器 music/ 資料夾載入（本地）或 manifest.json（線上 GitHub Pages）：
+   開發者把 MP3 放進 music\ 一起部署，線上玩家直接聽得到 */
 $('btn-servermusic').onclick=async()=>{
   try{
-    const r=await fetch('/api/music');
-    const list=await r.json();
-    if(!list.length)return toast('music\\ 資料夾裡沒有音檔（支援 mp3/ogg/wav/m4a/flac）','bad');
+    // 先試本地伺服器 API
+    let list=null;
+    try{
+      const r=await fetch('/api/music');
+      list=await r.json();
+    }catch(_){
+      // 線上模式：讀取隨遊戲部署的 manifest
+      try{
+        const r2=await fetch('music/manifest.json');
+        const m2=await r2.json();
+        list=(m2.files||[]).map(f=>f.startsWith('/')?f:f);
+      }catch(_2){ list=[]; }
+    }
+    if(!list||!list.length)return toast('music\\ 資料夾裡沒有音檔（支援 mp3/ogg/wav/m4a/flac）','bad');
     MYMUSIC.files=list;
     MYMUSIC.idx=0;
     $('mylist-box').style.display='block';
-    toast('從 music\\ 資料夾載入 '+list.length+' 首，開始播放 🎶','good');
+    toast('從 music 資料夾載入 '+list.length+' 首，開始播放 🎶','good');
     myPlay();
   }catch(e){
-    toast('此功能需要本地伺服器（雙擊 啟動遊戲.bat）','bad');
+    toast('無法載入音樂資料夾：'+e.message,'bad');
   }
 };
 $('my-prev').onclick=()=>myNext(-1);
