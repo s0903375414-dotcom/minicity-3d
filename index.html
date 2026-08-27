@@ -81,10 +81,7 @@
     <input type="range" id="tax" min="0" max="20" value="9">
     <button id="btn-music" style="width:100%;margin-top:5px;">🎵 音樂：開</button>
     <button id="btn-myfiles" style="width:100%;margin-top:5px;">📁 選擇音樂檔</button>
-    <button id="btn-servermusic-all" style="width:100%;margin-top:5px;">📂 全部（menu+day+night）</button>
-    <button id="btn-servermusic-menu" style="width:100%;margin-top:3px;">📂 主選單音樂</button>
-    <button id="btn-servermusic-day" style="width:100%;margin-top:3px;">📂 白天音樂</button>
-    <button id="btn-servermusic-night" style="width:100%;margin-top:3px;">📂 夜晚音樂</button>
+    <button id="btn-servermusic-all" style="width:100%;margin-top:5px;">📂 全部音樂（自動播放）</button>
     <div id="mylist-box" style="display:none;border:1px solid var(--line);border-radius:8px;padding:6px;margin-top:5px;font-size:11px;">
       <div id="mylist-name" style="color:#9fb4d8;margin-bottom:3px;">—</div>
       <div style="display:flex;gap:3px;">
@@ -2474,31 +2471,6 @@ $('btn-myfiles').onclick=()=>{
 };
 /* 從伺服器 music/ 資料夾載入（本地）或 manifest.json（線上 GitHub Pages）：
    開發者把 MP3 放進 music/menu、music/day、music/night 一起部署，線上玩家直接聽得到 */
-function loadMusicCategory(cat){
-  return async()=>{
-    try{
-      let list=null;
-      try{
-        const r=await fetch('/api/music?cat='+cat);
-        list=await r.json();
-      }catch(_){
-        try{
-          const r2=await fetch('music/manifest.json');
-          const m2=await r2.json();
-          list=(m2[cat]||[]).map(f=>f.startsWith('/')?f:f);
-        }catch(_2){ list=[]; }
-      }
-      if(!list||!list.length)return toast(cat+' 音樂資料夾沒有音檔','bad');
-      MYMUSIC.files=list;
-      MYMUSIC.idx=0;
-      $('mylist-box').style.display='block';
-      toast('從 music/'+cat+' 載入 '+list.length+' 首，開始播放 🎶','good');
-      myPlay();
-    }catch(e){
-      toast('無法載入音樂資料夾：'+e.message,'bad');
-    }
-  };
-}
 $('btn-servermusic-all').onclick=async()=>{
   try{
     let list=null;
@@ -2516,15 +2488,12 @@ $('btn-servermusic-all').onclick=async()=>{
     MYMUSIC.files=list;
     MYMUSIC.idx=0;
     $('mylist-box').style.display='block';
-    toast('從全部資料夾載入 '+list.length+' 首，開始播放 🎶','good');
+    toast('從全部資料夾載入 '+list.length+' 首，自動播放 🎶','good');
     myPlay();
   }catch(e){
     toast('無法載入音樂資料夾：'+e.message,'bad');
   }
 };
-$('btn-servermusic-menu').onclick=loadMusicCategory('menu');
-$('btn-servermusic-day').onclick=loadMusicCategory('day');
-$('btn-servermusic-night').onclick=loadMusicCategory('night');
 $('my-prev').onclick=()=>myNext(-1);
 $('my-next').onclick=()=>myNext(1);
 $('my-playpause').onclick=()=>{
