@@ -1829,6 +1829,8 @@ function stepCars(dt){
 
 /* ================= 晝夜 ================= */
 let dayT=DAY_LEN*.3;
+// 音樂自動播放狀態（需在 stepDayNight 之前宣告避免 TDZ）
+let menuMusicOn=false;
 function stepDayNight(dt){
   // 晝夜循環 = 3 × DAY_LEN = 12 分鐘（清晨→白天→夜晚各 4 分鐘）
   const CYCLE=DAY_LEN*3;
@@ -2959,10 +2961,14 @@ async function loadMusicAuto(cat){
   }
 }
 // 主選單音樂（需使用者互動後瀏覽器才允許聲音，首次點擊頁面即啟動）
-let menuMusicOn=false;
+// menuMusicOn 已在 stepDayNight 上方宣告，避免 TDZ
 mainmenu.addEventListener('click',()=>{
   if(!menuMusicOn){menuMusicOn=true;loadMusicAuto('menu');}
 },{once:false});
+// 任何點擊都嘗試啟動音樂（保險）
+document.addEventListener('click',()=>{
+  if(!menuMusicOn){menuMusicOn=true;loadMusicAuto('menu');}
+},{once:true});
 
 function startGame(){
   mainmenu.style.transition='opacity .6s';
