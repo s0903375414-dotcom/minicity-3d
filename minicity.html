@@ -96,6 +96,7 @@
     <button id="btn-cloud-load">⬇️ 雲端載入</button>
     <button id="btn-cloud-setup">🔑 Google 設定</button>
     <button id="btn-new">♻️ 重新開始</button>
+    <button id="btn-mainmenu" style="width:100%;margin-top:8px;background:#a84;">🏠 返回主選單</button>
   </div>
 </div>
 
@@ -104,8 +105,8 @@
 
 <div id="help" class="panel">
 🖱 左鍵點擊／拖曳＝建造（道路、分區可連畫）<br>
-🖱 右鍵拖曳＝旋轉 · 中鍵或 WASD＝平移 · 滾輪＝縮放<br>
-按 <b>R</b>＝拆除模式 · <b>Esc</b>＝收起選單<br><br>
+🖱 右鍵拖曳＝旋轉視角 · 中鍵或 WASD＝平移 · 滾輪＝縮放<br>
+按 <b>R</b>＝旋轉建築（北→東→南→西） · <b>Esc</b>＝取消選取/收起選單<br><br>
 ① 鋪路 ② 蓋電廠水塔（沿路供應）③ 劃分區 ④ 建築自己長出來<br>
 ⚠ 工業會失火！消防車會沿路趕來滅火<br>
 🚨 搶劫→警車出動 · 🤕 受傷→救護車出動<br>
@@ -1139,12 +1140,14 @@ function stepConstructions(dt){
 
 /* ================= 放置／移除 ================= */
 let tool='road';
+let buildRotate=0;  // 建築旋轉方向：0=北,1=東,2=南,3=西
 function place(type,x,y,cost){
   if(money<cost)return fail('錢不夠！需要 $'+cost);
   if(cellAt(x,y))return fail('這格已被佔用');
   const mesh=makeMeshFor(type,x,y);
+  if(buildRotate)mesh.rotation.y=buildRotate*Math.PI/2;
   startConstruction(x,y,type,mesh);
-  grid[y][x]={type,mesh,dev:false,level:1,supplied:{p:false,w:false},burn:0};
+  grid[y][x]={type,mesh,dev:false,level:1,supplied:{p:false,w:false},burn:0,rot:buildRotate};
   money-=cost;
   refreshRoadsAround(x,y);
   return true;
@@ -1788,13 +1791,17 @@ function closePanel(){
   document.querySelectorAll('.cat').forEach(e=>e.classList.remove('active'));
 }
 addEventListener('keydown',e=>{
-  if(e.key==='Escape')closePanel();
+  if(e.key==='Escape'){
+    closePanel();
+    tool=null;  // 取消當前選取的工具
+    document.querySelectorAll('.bcard.sel').forEach(c=>c.classList.remove('sel'));
+    return;
+  }
   if(e.key==='r'||e.key==='R'){
-    tool='bulldoze'; closePanel();
-    toggleCat('bulldoze',document.querySelector('[data-cat=bulldoze]'));
-    document.querySelector('[data-cat=bulldoze] .bcard');
-    const cards=buildpanel.querySelectorAll('.bcard');
-    if(cards.length)cards[0].classList.add('sel');
+    // R 鍵：旋轉建築（預覽旋轉方向，下次放置時生效）
+    if(!buildRotate)buildRotate=0;
+    buildRotate=(buildRotate+1)%4;
+    toast('建築旋轉：'+['北','東','南','西'][buildRotate],'good');
   }
 });
 
@@ -2564,6 +2571,13 @@ window._mmContinue=()=>{const has=!!localStorage.getItem(SAVE_KEY);if(has)load()
 window._mmNew=()=>{localStorage.removeItem(SAVE_KEY);startGame();};
 window._mmHelp=()=>{const box=$('mm-helpbox');box.style.display=box.style.display==='none'?'block':'none';};
 window._mmChangelog=()=>{$('changelog').style.display='flex';};
+
+// 返回主選單
+function backToMainMenu(){
+  if(!confirm('確定要返回主選單？目前遊戲進度未存檔會遺失。'))return;
+  location.reload();
+}
+$('btn-mainmenu').onclick=backToMainMenu;
 
 updateUI();
 tutRender();
