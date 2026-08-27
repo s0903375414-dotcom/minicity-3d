@@ -1,11 +1,25 @@
-// 部署前執行：掃描 music/ 資料夾生成 manifest.json（讓線上版也能播放開發者音樂）
+// 部署前執行：掃描 music/menu、music/day、music/night 生成分類 manifest.json
 const fs = require('fs');
 const path = require('path');
-const dir = path.join(__dirname, 'music');
-if (!fs.existsSync(dir)) { fs.mkdirSync(dir); }
-const files = fs.readdirSync(dir)
-  .filter(f => /\.(mp3|ogg|wav|m4a|flac)$/i.test(f))
-  .map(f => 'music/' + encodeURIComponent(f));
+
+const categories = {
+  menu: 'music/menu',
+  day: 'music/day',
+  night: 'music/night'
+};
+
+const manifest = { menu: [], day: [], night: [] };
+
+for (const [cat, dirPath] of Object.entries(categories)) {
+  const full = path.join(__dirname, dirPath);
+  if (!fs.existsSync(full)) { fs.mkdirSync(full, { recursive: true }); }
+  const files = fs.readdirSync(full)
+    .filter(f => /\.(mp3|ogg|wav|m4a|flac)$/i.test(f))
+    .map(f => dirPath + '/' + encodeURIComponent(f));
+  manifest[cat] = files;
+  console.log(`${cat}: ${files.length} 首`);
+}
+
 fs.writeFileSync(path.join(__dirname, 'music', 'manifest.json'),
-  JSON.stringify({ files }, null, 2));
-console.log('manifest.json:', files.length, '首音樂');
+  JSON.stringify(manifest, null, 2));
+console.log('manifest.json 完成');

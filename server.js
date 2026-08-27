@@ -18,15 +18,31 @@ const MIME = {
 
 const server = http.createServer((req, res) => {
   let urlPath = decodeURIComponent(req.url.split('?')[0]);
-  // 音樂清單 API：列出 music/ 資料夾裡的音檔
+  const urlObj = new URL(req.url, `http://localhost:${PORT}`);
+  const cat = urlObj.searchParams.get('cat');
+  // 音樂清單 API：列出 music/ 資料夾裡的音檔（支援 ?cat=menu|day|night）
   if (urlPath === '/api/music') {
-    const musicDir = path.join(ROOT, 'music');
-    fs.readdir(musicDir, (err, files) => {
-      if (err) { res.writeHead(200, {'Content-Type':'application/json'}); res.end('[]'); return; }
-      const audio = files.filter(f => /\.(mp3|ogg|wav|m4a|flac)$/i.test(f));
-      res.writeHead(200, {'Content-Type':'application/json; charset=utf-8'});
-      res.end(JSON.stringify(audio.map(f => '/music/' + encodeURIComponent(f))));
-    });
+    let dirs = ['music/menu', 'music/day', 'music/night'];
+    if (cat && ['menu','day','night'].includes(cat)) {
+      dirs = ['music/' + cat];
+    }
+    let allFiles = [];
+    let done = 0;
+    for (const d of dirs) {
+      const musicDir = path.join(ROOT, d);
+      fs.readdir(musicDir, (err, files) => {
+        if (!err) {
+          const audio = files.filter(f => /\.(mp3|ogg|wav|m4a|flac)$/i.test(f))
+            .map(f => d + '/' + encodeURIComponent(f));
+          allFiles.push(...audio);
+        }
+        done++;
+        if (done === dirs.length) {
+          res.writeHead(200, {'Content-Type':'application/json; charset=utf-8'});
+          res.end(JSON.stringify(allFiles));
+        }
+      });
+    }
     return;
   }
   if (urlPath === '/') urlPath = '/minicity.html';

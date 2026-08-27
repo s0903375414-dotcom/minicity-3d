@@ -1,5 +1,7 @@
 {
-  "files": [
-    "music/Jumping%20Thoughts.mp3"
-  ]
+  "menu": [],
+  "day": [
+    "music/day/Jumping%20Thoughts.mp3"
+  ],
+  "night": []
 }
