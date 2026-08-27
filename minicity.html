@@ -931,12 +931,41 @@ function makeRubble(){
 }
 const FIRE_MAT_A=new THREE.MeshBasicMaterial({color:0xff7a1e,transparent:true,opacity:.85});
 const FIRE_MAT_B=new THREE.MeshBasicMaterial({color:0xffd23e,transparent:true,opacity:.9});
+const SMOKE_MAT=new THREE.MeshBasicMaterial({color:0x333333,transparent:true,opacity:.4,depthWrite:false});
 function makeFlame(){
   const g=new THREE.Group();
+  // 主火焰錐體
   const a=new THREE.Mesh(new THREE.ConeGeometry(.18,.42,7),FIRE_MAT_A);
   a.position.y=.3; g.add(a);
   const b=new THREE.Mesh(new THREE.ConeGeometry(.1,.28,7),FIRE_MAT_B);
   b.position.y=.34; g.add(b);
+  // 火焰粒子（飛星火花）
+  g.userData.embers=[];
+  for(let i=0;i<8;i++){
+    const geo=new THREE.SphereGeometry(0.02+Math.random()*0.015,6,6);
+    const mat=new THREE.MeshBasicMaterial({color:pick([0xff4400,0xffaa00,0xffee44]),transparent:true,opacity:0.8,depthWrite:false});
+    const ember=new THREE.Mesh(geo,mat);
+    ember.userData={vx:(Math.random()-0.5)*0.5,vy:0.5+Math.random()*1,vz:(Math.random()-0.5)*0.5,life:Math.random()*0.5+0.3,maxLife:0.8};
+    ember.position.set((Math.random()-0.5)*0.2,0.2+Math.random()*0.3,(Math.random()-0.5)*0.2);
+    g.add(ember);
+    g.userData.embers.push(ember);
+  }
+  // 煙霧粒子
+  g.userData.smoke=[];
+  for(let i=0;i<6;i++){
+    const geo=new THREE.SphereGeometry(0.15+Math.random()*0.1,8,8);
+    const smoke=new THREE.Mesh(geo,SMOKE_MAT.clone());
+    smoke.userData={vy:0.2+Math.random()*0.3,vr:(Math.random()-0.5)*0.5,life:Math.random()*1,maxLife:2};
+    smoke.position.set((Math.random()-0.5)*0.3,0.3+Math.random()*0.4,(Math.random()-0.5)*0.3);
+    smoke.scale.setScalar(0.3+Math.random()*0.5);
+    g.add(smoke);
+    g.userData.smoke.push(smoke);
+  }
+  // 光暈（PointLight）
+  const light=new THREE.PointLight(0xff5500,1.5,3);
+  light.position.y=0.4;
+  g.add(light);
+  g.userData.light=light;
   return g;
 }
 
@@ -1289,6 +1318,8 @@ function computeOverlays(){
 
 /* ================= 火災 ================= */
 let FIRES=[];
+// 搶劫/受傷視覺事件追蹤
+let INCIDENTS=[]; // {x,y,type:'robbery'|'injury',timer,mesh}
 function ignite(c,x,y){
   if(c.burn>0)return;
   c.burn=6;
@@ -1299,6 +1330,56 @@ function ignite(c,x,y){
 function killFlame(c){
   const i=FIRES.findIndex(e=>e.c===c);
   if(i>=0){CITY.remove(FIRES[i].f);FIRES.splice(i,1);c.burn=0;}
+}
+// 創建事件視覺效果（搶劫/受傷圖標+粒子）
+function spawnIncidentEffect(x,y,type){
+  const g=new THREE.Group();
+  if(type==='robbery'){
+    // 搶劫：紅色閃爍警示標誌 + 破碎粒子
+    const iconGeo=new THREE.RingGeometry(0.15,0.25,8);
+    const iconMat=new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:0.9,side:THREE.DoubleSide,depthWrite:false});
+    const icon=new THREE.Mesh(iconGeo,iconMat);
+    icon.rotation.x=-Math.PI/2;
+    icon.position.y=1.2;
+    g.add(icon);
+    // 閃爍動畫用
+    icon.userData={type:'robbery',timer:0,baseScale:1};
+    // 破碎粒子
+    g.userData.shards=[];
+    for(let i=0;i<12;i++){
+      const geo=new THREE.TetrahedronGeometry(0.03+Math.random()*0.02,0);
+      const mat=new THREE.MeshBasicMaterial({color:pick([0xff4444,0xffaa00,0xffffff]),transparent:true,opacity:0.8});
+      const shard=new THREE.Mesh(geo,mat);
+      shard.userData={vx:(Math.random()-0.5)*2,vy:1+Math.random()*2,vz:(Math.random()-0.5)*2,rotX:Math.random()*6,rotY:Math.random()*6,life:0};
+      shard.position.set(x+0.5,(Math.random()-0.5)*0.5+0.5,y+0.5);
+      g.add(shard);
+      g.userData.shards.push(shard);
+    }
+  }else{
+    // 受傷：紅十字 + 治癒粒子
+    const crossG=new THREE.Group();
+    const bar1=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.3,0.06),new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:0.9,depthWrite:false}));
+    const bar2=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.06,0.06),new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:0.9,depthWrite:false}));
+    crossG.add(bar1); crossG.add(bar2);
+    crossG.position.y=1.2;
+    crossG.rotation.x=-Math.PI/2;
+    g.add(crossG);
+    crossG.userData={type:'injury',timer:0};
+    // 治癒粒子（綠色向上飄）
+    g.userData.heal=[];
+    for(let i=0;i<10;i++){
+      const geo=new THREE.SphereGeometry(0.02+Math.random()*0.015,6,6);
+      const mat=new THREE.MeshBasicMaterial({color:0x44ff44,transparent:true,opacity:0.8,depthWrite:false});
+      const p=new THREE.Mesh(geo,mat);
+      p.userData={vx:(Math.random()-0.5)*0.3,vy:0.5+Math.random()*0.5,vz:(Math.random()-0.5)*0.3,life:0};
+      p.position.set(x+0.5,0.5,y+0.5);
+      g.add(p);
+      g.userData.heal.push(p);
+    }
+  }
+  g.position.set(0,0,0);
+  CITY.add(g);
+  INCIDENTS.push({x,y,type,timer:0,mesh:g});
 }
 
 /* ================= 模擬主循環 ================= */
@@ -1360,12 +1441,14 @@ function simulate(){
       if(c&&ZONES.includes(c.type)&&c.dev&&!c.burn){
         if(Math.random()<.5){
           toast('🚨 發生搶劫事件！','bad');
+          spawnIncidentEffect(p.x,p.y,'robbery');
           if(!dispatch('police',p.x,p.y)){
             happy=Math.max(5,happy-4); // 警察到不了，市民恐慌
             toast('😱 無法可管，市民恐慌！','bad');
           }
         }else{
           toast('🤕 有市民受傷需要救治！','bad');
+          spawnIncidentEffect(p.x,p.y,'injury');
           if(!dispatch('medic',p.x,p.y)){
             happy=Math.max(5,happy-3);
             toast('😢 救護車到不了，傷患情況惡化','bad');
@@ -1770,6 +1853,238 @@ function stepDayNight(dt){
   if(!gameMusicLoading){
     if(day>.3)loadMusicAuto('day');
     else loadMusicAuto('night');
+  }
+}
+
+/* ================= 天氣系統 ================= */
+let WEATHER={type:'clear',timer:0,nextChange:0,particles:[],intensity:0};
+const WEATHER_TYPES=['clear','clear','clear','clear','clear','rain','rain','snow','fog','storm'];
+function stepWeather(dt){
+  // 隨機切換天氣
+  WEATHER.timer+=dt;
+  if(WEATHER.timer>=WEATHER.nextChange){
+    WEATHER.type=pick(WEATHER_TYPES);
+    WEATHER.timer=0;
+    WEATHER.nextChange=60+Math.random()*180; // 60~240 秒換一次
+    WEATHER.intensity=Math.random()*0.7+0.3;
+    toast('☀️🌧️❄️ 天氣變化：'+{'clear':'晴天','rain':'下雨','snow':'下雪','fog':'有霧','storm':'暴風雨'}[WEATHER.type],'ok');
+    // 清理舊粒子
+    for(const p of WEATHER.particles){CITY.remove(p);}
+    WEATHER.particles=[];
+    if(WEATHER.type==='rain')createRain();
+    else if(WEATHER.type==='snow')createSnow();
+    else if(WEATHER.type==='fog')createFog();
+    else if(WEATHER.type==='storm')createStorm();
+  }
+  // 更新粒子
+  for(const p of WEATHER.particles){
+    if(p.userData.type==='rain'){
+      p.position.y-=dt*8*p.userData.speed;
+      p.position.x+=dt*p.userData.wind;
+      if(p.position.y<0.1){
+        p.position.y=1.5+Math.random()*2;
+        p.position.x=(Math.random()-0.5)*N;
+        p.position.z=(Math.random()-0.5)*N;
+      }
+    }else if(p.userData.type==='snow'){
+      p.position.y-=dt*1.5*p.userData.speed;
+      p.position.x+=dt*0.5*Math.sin(p.userData.phase+p.position.y);
+      p.position.z+=dt*0.3*Math.cos(p.userData.phase+p.position.y);
+      if(p.position.y<0.1){
+        p.position.y=2+Math.random()*3;
+        p.position.x=(Math.random()-0.5)*N;
+        p.position.z=(Math.random()-0.5)*N;
+      }
+    }else if(p.userData.type==='fog'){
+      p.position.y+=dt*0.1;
+      p.material.opacity=0.15*Math.sin(p.userData.phase+p.position.y*0.5);
+      if(p.position.y>4){p.position.y=0.5;}
+    }else if(p.userData.type==='storm'){
+      p.position.y-=dt*12*p.userData.speed;
+      p.position.x+=dt*2*p.userData.wind;
+      if(p.position.y<0.1){
+        p.position.y=3+Math.random()*4;
+        p.position.x=(Math.random()-0.5)*N;
+        p.position.z=(Math.random()-0.5)*N;
+      }
+    }
+  }
+  // 天氣影響光照
+  if(WEATHER.type!=='clear'){
+    const dark=WEATHER.intensity*0.5;
+    sun.intensity*=1-dark;
+    amb.intensity*=1-dark*0.5;
+  }
+}
+function createRain(){
+  const count=Math.floor(200*WEATHER.intensity);
+  for(let i=0;i<count;i++){
+    const g=new THREE.BufferGeometry();
+    const positions=new Float32Array(3);
+    positions[0]=(Math.random()-0.5)*N;
+    positions[1]=1.5+Math.random()*2;
+    positions[2]=(Math.random()-0.5)*N;
+    g.setAttribute('position',new THREE.BufferAttribute(positions,3));
+    const m=new THREE.PointsMaterial({color:0x88aaff,size:0.05,transparent:true,opacity:0.6,depthWrite:false});
+    const p=new THREE.Points(g,m);
+    p.userData={type:'rain',speed:0.8+Math.random()*0.4,wind:(Math.random()-0.5)*2};
+    WEATHER.particles.push(p);
+    CITY.add(p);
+  }
+}
+function createSnow(){
+  const count=Math.floor(150*WEATHER.intensity);
+  for(let i=0;i<count;i++){
+    const g=new THREE.BufferGeometry();
+    const positions=new Float32Array(3);
+    positions[0]=(Math.random()-0.5)*N;
+    positions[1]=2+Math.random()*3;
+    positions[2]=(Math.random()-0.5)*N;
+    g.setAttribute('position',new THREE.BufferAttribute(positions,3));
+    const m=new THREE.PointsMaterial({color:0xffffff,size:0.04,transparent:true,opacity:0.8,depthWrite:false});
+    const p=new THREE.Points(g,m);
+    p.userData={type:'snow',speed:0.5+Math.random()*0.5,phase:Math.random()*Math.PI*2};
+    WEATHER.particles.push(p);
+    CITY.add(p);
+  }
+}
+function createFog(){
+  const count=Math.floor(50*WEATHER.intensity);
+  for(let i=0;i<count;i++){
+    const g=new THREE.SphereGeometry(0.5+Math.random()*1,8,8);
+    const m=new THREE.MeshBasicMaterial({color:0xaaaaaa,transparent:true,opacity:0.1,depthWrite:false});
+    const p=new THREE.Mesh(g,m);
+    p.position.set((Math.random()-0.5)*N,0.5+Math.random()*3,(Math.random()-0.5)*N);
+    p.scale.setScalar(2+Math.random()*3);
+    p.userData={type:'fog',phase:Math.random()*Math.PI*2};
+    WEATHER.particles.push(p);
+    CITY.add(p);
+  }
+}
+function createStorm(){
+  createRain();
+  const count=Math.floor(100*WEATHER.intensity);
+  for(let i=0;i<count;i++){
+    const g=new THREE.BufferGeometry();
+    const positions=new Float32Array(3);
+    positions[0]=(Math.random()-0.5)*N;
+    positions[1]=3+Math.random()*4;
+    positions[2]=(Math.random()-0.5)*N;
+    g.setAttribute('position',new THREE.BufferAttribute(positions,3));
+    const m=new THREE.PointsMaterial({color:0x6688cc,size:0.08,transparent:true,opacity:0.5,depthWrite:false});
+    const p=new THREE.Points(g,m);
+    p.userData={type:'storm',speed:1.2+Math.random()*0.5,wind:(Math.random()-0.5)*4};
+    WEATHER.particles.push(p);
+    CITY.add(p);
+  }
+  // 閃電效果
+  if(!WEATHER.lightningTimer)WEATHER.lightningTimer=0;
+}
+
+/* ================= 行人系統 ================= */
+let PEDESTRIANS=[];
+const PED_COLORS=[0xff6b6b,0x4ecdc4,0xffe66d,0x95e1d3,0xf38181,0xaa96da,0xfcbad3,0xa8d8ea];
+function makePedestrian(){
+  const g=new THREE.Group();
+  // 身體
+  const body=new THREE.Mesh(new THREE.CapsuleGeometry(0.06,0.2,4,8),new THREE.MeshLambertMaterial({color:pick(PED_COLORS)}));
+  body.position.y=0.16;
+  g.add(body);
+  // 頭
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8),new THREE.MeshLambertMaterial({color:0xffdbac}));
+  head.position.y=0.35;
+  g.add(head);
+  // 手臂
+  const armGeom=new THREE.CapsuleGeometry(0.02,0.12,4,8);
+  const armMat=new THREE.MeshLambertMaterial({color:0xffdbac});
+  const armL=new THREE.Mesh(armGeom,armMat); armL.position.set(-0.09,0.2,0); armL.rotation.z=0.3;
+  const armR=new THREE.Mesh(armGeom,armMat); armR.position.set(0.09,0.2,0); armR.rotation.z=-0.3;
+  g.add(armL); g.add(armR);
+  // 腿
+  const legGeom=new THREE.CapsuleGeometry(0.025,0.15,4,8);
+  const legMat=new THREE.MeshLambertMaterial({color:0x444444});
+  const legL=new THREE.Mesh(legGeom,legMat); legL.position.set(-0.03,0.05,0);
+  const legR=new THREE.Mesh(legGeom,legMat); legR.position.set(0.03,0.05,0);
+  g.add(legL); g.add(legR);
+  g.userData={armL,armR,legL,legR,phase:Math.random()*Math.PI*2};
+  return g;
+}
+function spawnPedestrian(){
+  // 在有人行道的路邊生成
+  const sidewalks=[];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=grid[y][x];
+    if(c&&c.type==='road'){
+      for(const [dx,dy] of DIRS){
+        const nc=cellAt(x+dx,y+dy);
+        if(nc&&!nc.type){
+          sidewalks.push({x:x+dx,y:y+dy,baseX:x,baseY:y});
+        }
+      }
+    }
+  }
+  if(!sidewalks.length)return;
+  const spot=pick(sidewalks);
+  const p=makePedestrian();
+  p.position.set(spot.x+0.5,0.01,spot.y+0.5);
+  p.userData.homeX=spot.x+0.5;
+  p.userData.homeZ=spot.y+0.5;
+  p.userData.targetX=spot.x+0.5+(Math.random()-0.5)*0.8;
+  p.userData.targetZ=spot.y+0.5+(Math.random()-0.5)*0.8;
+  p.userData.walkTimer=0;
+  p.userData.walkDuration=3+Math.random()*5;
+  CITY.add(p);
+  PEDESTRIANS.push(p);
+}
+function stepPedestrians(dt){
+  // 生成行人
+  if(PEDESTRIANS.length<pop*0.1 && Math.random()<0.02)spawnPedestrian();
+  // 更新行人
+  for(let i=PEDESTRIANS.length-1;i>=0;i--){
+    const p=PEDESTRIANS[i];
+    if(!p.parent){PEDESTRIANS.splice(i,1);continue;}
+    const ud=p.userData;
+    ud.phase+=dt*8;
+    // 手腳擺動
+    ud.armL.rotation.x=Math.sin(ud.phase)*0.5;
+    ud.armR.rotation.x=-Math.sin(ud.phase)*0.5;
+    ud.legL.rotation.x=-Math.sin(ud.phase)*0.5;
+    ud.legR.rotation.x=Math.sin(ud.phase)*0.5;
+    // 行走邏輯
+    ud.walkTimer+=dt;
+    if(ud.walkTimer>=ud.walkDuration){
+      // 選新目標
+      const c=cellAt(Math.round(p.position.x-0.5),Math.round(p.position.z-0.5));
+      if(c && c.type==='road'){
+        for(const [dx,dy] of DIRS){
+          const nc=cellAt(Math.round(p.position.x-0.5)+dx,Math.round(p.position.z-0.5)+dy);
+          if(nc && !nc.type){
+            ud.targetX=Math.round(p.position.x-0.5)+dx+0.5+(Math.random()-0.5)*0.5;
+            ud.targetZ=Math.round(p.position.z-0.5)+dy+0.5+(Math.random()-0.5)*0.5;
+            break;
+          }
+        }
+      }else{
+        ud.targetX=ud.homeX+(Math.random()-0.5)*0.8;
+        ud.targetZ=ud.homeZ+(Math.random()-0.5)*0.8;
+      }
+      ud.walkTimer=0;
+      ud.walkDuration=3+Math.random()*5;
+    }
+    // 移動向目標
+    const dx=ud.targetX-p.position.x;
+    const dz=ud.targetZ-p.position.z;
+    const dist=Math.hypot(dx,dz);
+    if(dist>0.05){
+      const speed=0.3;
+      p.position.x+=dx/dist*speed*dt;
+      p.position.z+=dz/dist*speed*dt;
+      p.rotation.y=Math.atan2(dx,dz);
+    }
+    // 太遠了重置
+    if(Math.hypot(p.position.x-ud.homeX,p.position.z-ud.homeZ)>5){
+      p.position.set(ud.homeX,0.01,ud.homeZ);
+    }
   }
 }
 
@@ -2352,8 +2667,113 @@ function animate(){
   for(const e of FIRES){
     e.f.scale.y=1+Math.sin(ft*14+e.x)*.22;
     e.f.scale.x=e.f.scale.z=1+Math.sin(ft*11+e.y)*.12;
-  }
-  // 風車葉輪（繞機艙軸向 X 旋轉）
+    // 火焰粒子動畫
+    if(e.f.userData.embers){
+      for(const ember of e.f.userData.embers){
+        ember.position.x+=ember.userData.vx*dt;
+        ember.position.y+=ember.userData.vy*dt;
+        ember.position.z+=ember.userData.vz*dt;
+        ember.userData.life+=dt;
+        ember.userData.vy-=dt*2; // 重力
+        ember.userData.vx*=0.98; ember.userData.vz*=0.98; // 空氣阻力
+        if(ember.userData.life>=ember.userData.maxLife){
+          // 重置火星
+          ember.position.set((Math.random()-0.5)*0.2,0.2+Math.random()*0.3,(Math.random()-0.5)*0.2);
+          ember.userData.vx=(Math.random()-0.5)*0.5;
+          ember.userData.vy=0.5+Math.random()*1;
+          ember.userData.vz=(Math.random()-0.5)*0.5;
+          ember.userData.life=0;
+          ember.userData.maxLife=Math.random()*0.5+0.3;
+        }
+        const alpha=1-ember.userData.life/ember.userData.maxLife;
+        ember.material.opacity=0.8*alpha;
+        ember.scale.setScalar(alpha*0.5+0.5);
+      }
+    }
+    // 煙霧粒子動畫
+    if(e.f.userData.smoke){
+      for(const smoke of e.f.userData.smoke){
+        smoke.position.y+=smoke.userData.vy*dt;
+        smoke.rotation.y+=smoke.userData.vr*dt;
+        smoke.userData.life+=dt;
+        if(smoke.userData.life>=smoke.userData.maxLife){
+          smoke.position.set((Math.random()-0.5)*0.3,0.3+Math.random()*0.4,(Math.random()-0.5)*0.3);
+          smoke.userData.vy=0.2+Math.random()*0.3;
+          smoke.userData.vr=(Math.random()-0.5)*0.5;
+          smoke.userData.life=0;
+          smoke.userData.maxLife=1+Math.random()*1;
+          smoke.scale.setScalar(0.3+Math.random()*0.5);
+        }
+        const alpha=1-smoke.userData.life/smoke.userData.maxLife;
+        smoke.material.opacity=0.4*alpha;
+        smoke.scale.multiplyScalar(1+dt*0.5);
+      }
+    }
+      // 光暈閃爍
+      if(e.f.userData.light){
+        e.f.userData.light.intensity=1.5+Math.sin(ft*20+e.x)*0.5;
+      }
+      }
+      // 事件視覺效果動畫（搶劫/受傷）
+      for(let i=INCIDENTS.length-1;i>=0;i--){
+        const inc=INCIDENTS[i];
+        inc.timer+=dt;
+        if(inc.type==='robbery'){
+          // 閃爍圖標
+          const icon=inc.mesh.children[0];
+          if(icon&&icon.userData){
+            icon.userData.timer+=dt;
+            icon.scale.setScalar(1+Math.sin(icon.userData.timer*15)*0.3);
+            icon.material.opacity=0.9*(0.5+Math.sin(icon.userData.timer*15)*0.5);
+          }
+          // 破碎粒子
+          if(inc.mesh.userData.shards){
+            for(const shard of inc.mesh.userData.shards){
+              shard.position.x+=shard.userData.vx*dt;
+              shard.position.y+=shard.userData.vy*dt;
+              shard.position.z+=shard.userData.vz*dt;
+              shard.rotation.x+=shard.userData.rotX*dt;
+              shard.rotation.y+=shard.userData.rotY*dt;
+              shard.userData.vy-=dt*4; // 重力
+              shard.userData.life+=dt;
+              if(shard.userData.life>1.5){
+                shard.material.opacity*=0.95;
+                if(shard.material.opacity<0.05){
+                  inc.mesh.remove(shard);
+                }
+              }
+            }
+          }
+        }else if(inc.type==='injury'){
+          // 紅十字脈動
+          const cross=inc.mesh.children[0];
+          if(cross&&cross.userData){
+            cross.userData.timer+=dt;
+            cross.scale.setScalar(1+Math.sin(cross.userData.timer*8)*0.2);
+          }
+          // 治癒粒子
+          if(inc.mesh.userData.heal){
+            for(const p of inc.mesh.userData.heal){
+              p.position.x+=p.userData.vx*dt;
+              p.position.y+=p.userData.vy*dt;
+              p.position.z+=p.userData.vz*dt;
+              p.userData.life+=dt;
+              if(p.userData.life>2){
+                p.material.opacity*=0.95;
+                if(p.material.opacity<0.05){
+                  inc.mesh.remove(p);
+                }
+              }
+            }
+          }
+        }
+        // 事件持續時間結束後移除
+        if(inc.timer>8){
+          CITY.remove(inc.mesh);
+          INCIDENTS.splice(i,1);
+        }
+      }
+      // 風車葉輪（繞機艙軸向 X 旋轉）
   for(const s of SPIN){
     if(s.userData.rotor)s.userData.rotor.rotation.x+=dt*2.2;
   }
@@ -2383,6 +2803,10 @@ function animate(){
     cl.position.x+=cl.userData.speed*dt;
     if(cl.position.x>N+30)cl.position.x=-25;
   }
+  // 天氣系統
+  stepWeather(dt);
+  // 行人系統
+  stepPedestrians(dt);
   renderer.render(scene,camera);
 }
 addEventListener('resize',()=>{
