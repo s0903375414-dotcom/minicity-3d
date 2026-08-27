@@ -85,6 +85,12 @@
     <button id="btn-cloud">☁️ 雲端存檔</button>
     <button id="btn-cloud-load">⬇️ 雲端載入</button>
     <button id="btn-cloud-setup">🔑 Google 設定</button>
+    <div id="account-info" style="margin-top:8px;padding:8px;background:rgba(255,255,255,.05);border-radius:8px;display:none;">
+      <div id="account-avatar" style="width:32px;height:32px;border-radius:50%;background:#444;float:left;margin-right:8px;"></div>
+      <div id="account-name" style="font-size:12px;line-height:1.4;"></div>
+      <div id="account-email" style="font-size:11px;color:#9fb4d8;"></div>
+      <button id="btn-logout" style="margin-top:6px;width:100%;font-size:11px;padding:4px;background:#a44;border:1px solid #633;border-radius:4px;">登出</button>
+    </div>
     <button id="btn-sandbox" style="width:100%;margin-top:8px;background:#4a7a4a;">🏖️ 沙盒模式</button>
     <button id="btn-new">♻️ 重新開始</button>
     <button id="btn-mainmenu" style="width:100%;margin-top:8px;background:#a84;">🏠 返回主選單</button>
@@ -2433,15 +2439,44 @@ async function gAuth(){
   return new Promise((res)=>{
     const tc=google.accounts.oauth2.initTokenClient({
       client_id:cid,
-      scope:'https://www.googleapis.com/auth/drive.file',
+      scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
       callback:(resp)=>{
-        if(resp.access_token){gToken=resp.access_token;res(true);}
-        else{toast('Google 登入取消或失敗','bad');res(false);}
+        if(resp.access_token){
+          gToken=resp.access_token;
+          fetchUserInfo().then(()=>res(true));
+        }else{toast('Google 登入取消或失敗','bad');res(false);}
       }
     });
     tc.requestAccessToken();
   });
 }
+async function fetchUserInfo(){
+  try{
+    const r=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+gToken}});
+    if(!r.ok)throw new Error('無法取得用戶資訊');
+    const info=await r.json();
+    gUser=info;
+    updateAccountUI();
+  }catch(e){console.warn('User info fetch failed:',e);}
+}
+function updateAccountUI(){
+  const box=$('account-info');
+  if(gUser){
+    box.style.display='block';
+    $('account-name').textContent=gUser.name||'Google 用戶';
+    $('account-email').textContent=gUser.email||'';
+    if(gUser.picture)$('account-avatar').style.backgroundImage='url('+gUser.picture+')';
+  }else{
+    box.style.display='none';
+  }
+}
+function gLogout(){
+  gToken=null; gUser=null; gFileId=null;
+  localStorage.removeItem('mc_gdrive_file');
+  updateAccountUI();
+  toast('已登出','good');
+}
+$('btn-logout').onclick=gLogout;
 async function gApi(method,url,body){
   const opts={method,headers:{Authorization:'Bearer '+gToken,'Content-Type':'application/json'}};
   if(body)opts.body=JSON.stringify(body);
