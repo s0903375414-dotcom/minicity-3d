@@ -190,6 +190,99 @@
       <li>🛣 自動道路造型：斑馬線路口、分道虛線、人行道</li>
     </ul>
 
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.9.18 — 音樂自動切換修復</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🎵 修復晝夜音樂切換競態：發起切換即更新 autoMusicCategory，避免 day→night 卡在同類別</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.9.17 — 主選單 Google 登入按鈕</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🔑 主選單「新的城市」下新增 GIS One Tap 登入按鈕（大尺寸、Outline 主題）</li>
+      <li>🔄 登入成功自動同步右側帳號面板（大頭照、名稱、Email、登出）</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.9.16 — 重寫天氣系統</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🌧️ 雨：條狀雨滴 + 地面濺落粒子、濕地面材質（roughness/metalness 變化）</li>
+      <li>❄️ 雪：六角雪花幾何體、飄落動畫、地面積雪堆疊</li>
+      <li>🌫️ 霧：分層霧（高空薄霧 + 地面濃霧），高度指數淡入</li>
+      <li>⚡ 暴風雨：閃電（分叉路徑）+ 雷聲（Web Audio 程序化，隨距離延遲/衰減）</li>
+      <li>🌈 動態光照/天空：HemisphereLight + skyColor 雙插值，晝夜/天氣無縫過渡</li>
+      <li>💨 風力：攝影機微搖晃 + 雨/雪/霧水平位移</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.9.15 — 行人系統與緊急車輛警笛</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🚶 行人：沿人行道/斑馬線隨機行走，紅綠燈口等待過馬路，到達目標消失</li>
+      <li>🚨 緊急車輛警笛：Web Audio API 程序化生成（警察/消防/救護三種音調），無需音檔</li>
+      <li>🎨 車輛/建築物重新建模：更精細車身比例、輪毂、車燈、陽台、玻璃幕牆</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.9.14 — 內建 Google OAuth Client ID</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🔑 內建 GOOGLE_CLIENT_ID（719568168437...），免手動輸入即可啟用雲端存檔</li>
+      <li>🌐 OAuth 授權已涵蓋 GitHub Pages / Netlify / Render 三平台</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.9.13 — 修復 cars 未定義錯誤</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🐛 修復 stepCars 中 cars 變數未宣告導致的 ReferenceError</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.9.12 — 沙盒模式 + 緊急事件 5 分鐘</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🏖️ 沙盒模式：無限金錢、免建造成本、免維護費、無災害、建築自動修復</li>
+      <li>⏱️ 緊急事件持續時間：8 秒 → 300 秒（5 分鐘），給玩家足夠反應時間</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.9.11 — 音樂分類系統修復</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🎵 移除內建程序化音樂，改為純使用者音檔（music/menu、day、night 三類資料夾）</li>
+      <li>📋 manifest.json 自動掃描，分類隨機播放、無縫切換</li>
+      <li>🔧 修復主選單誤播 day 類別、分類項目重複等問題</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.7 — 公共設施供電修正 + 更新日誌面板</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>⚡ 修復電廠容量只算 dev=true 導致供電 0、公共設施不用電的 bug</li>
+      <li>📜 主選單新增「更新日誌」按鈕，可查看完整版本歷史</li>
+      <li>⚙️ 右側設定面板改為可收合，避免過長遮擋 UI</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.6 — 緊急派遣系統</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🚒 失火時消防車<b>沿道路尋路</b>趕赴現場，水柱粒子滅火特效</li>
+      <li>🚓 隨機搶劫事件，警車出動逮捕（幸福度+2）</li>
+      <li>🚑 隨機受傷事件，救護車出動救治</li>
+      <li>🔴 <b>道路必須連通</b>才能派遣！救不到會重扣幸福度</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.5 — 百種建築與車輛、災害系統</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🏬 新增 45 種建築：商店街／產業／地標／農業四大分類</li>
+      <li>🚗 車輛擴充至 13 種，隨人口解鎖（警車、救護車、油罐車…）</li>
+      <li>🌪️ 六種災害：地震、龍捲風、隕石、洪水、暴動、大停電</li>
+      <li>💰 商店類建築自帶營收，人口越多賺越多</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v3.0 — TheoTown 式 UI 大改版</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🗂 分類建造選單＋建築卡片面板</li>
+      <li>🌀 風力發電（旋轉葉輪）、🔆 太陽能電場、⛲ 噴泉、🏟 體育場</li>
+      <li>🏠 分區建築多變體系統，城市不再千篇一律</li>
+      <li>☁️ Google Drive 雲端存檔（OAuth 登入）</li>
+      <li>🏠 主選單：繼續遊戲／新城市／遊戲說明</li>
+    </ul>
+
+    <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v2.x — 基礎建設期</h2>
+    <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
+      <li>🏗 施工動畫：鷹架＋旋轉塔吊＋建築分段升起</li>
+      <li>🔥 火災蔓延、💧 水電管線供應網、😊 幸福度細算</li>
+      <li>🌗 晝夜循環（夜間窗光、車頭燈）、行駛車流、飄雲</li>
+      <li>📋 新手教學任務鏈（六步驟獎勵金）</li>
+      <li>🛣 自動道路造型：斑馬線路口、分道虛線、人行道</li>
+    </ul>
+
     <h2 style="color:var(--gold);font-size:15px;margin:14px 0 4px;">v1.0 — 誕生</h2>
     <ul style="margin:2px 0;padding-left:20px;font-size:13px;line-height:1.75;">
       <li>🏙 3D 城市建造原型：道路、分區、建築升級、稅收財政</li>
